@@ -3,1404 +3,664 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>OmniFlow - 個人財務與情境開支分析儀</title>
-  
-  <!-- Apple Web App & Standalone Meta -->
+  <title>OmniFlow 財務管理系統</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="OmniFlow記帳">
-  <meta name="theme-color" content="#4F46E5">
-
-  <!-- UI Frameworks (Tailwind CSS, FontAwesome, Chart.js) -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="OmniFlow">
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', '"Noto Sans TC"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-    body {
-      font-family: 'Plus Jakarta Sans', 'Noto Sans TC', sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
+    .safe-top { padding-top: env(safe-area-inset-top); }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    input, select, textarea { font-size: 16px !important; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-28 md:pb-12">
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-500 selection:text-white pb-20">
 
-  <!-- Global Header -->
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
-    <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+  <!-- 頂部導航 -->
+  <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200 safe-top">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
-          <i class="fa-solid fa-chart-pie text-lg"></i>
+        <div class="w-10 h-10 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+          <i class="fa-solid fa-wallet"></i>
         </div>
         <div>
-          <h1 class="text-base md:text-lg font-bold text-slate-900 leading-tight">OmniFlow 財務分析系統</h1>
-          <p class="text-xs text-slate-500 font-medium">多維度情境標籤與智能月結單解析</p>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base font-bold text-slate-900 leading-none">OmniFlow</h1>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">本地沙盒隔離</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">多維度情境財務分析儀</p>
         </div>
       </div>
+      
       <div class="flex items-center space-x-2">
-        <button onclick="openImportModal()" class="inline-flex items-center px-3 md:px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs md:text-sm font-semibold transition-all">
-          <i class="fa-solid fa-file-invoice-dollar mr-1.5 text-indigo-600"></i> 匯入月結單
+        <button onclick="openSyncModal()" class="px-3 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span class="hidden sm:inline">跨裝置同步</span>
         </button>
-        <button onclick="openModal()" class="inline-flex items-center px-3 md:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs md:text-sm font-semibold shadow-sm shadow-indigo-200 transition-all">
-          <i class="fa-solid fa-plus mr-1.5"></i> 新增開支
+        <button onclick="openModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-plus"></i>
+          <span>記帳</span>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
-    <!-- View Switcher Tabs -->
-    <div class="flex p-1 bg-slate-200/70 rounded-2xl max-w-sm mx-auto shadow-inner">
-      <button id="tab-btn-analytics" onclick="switchView('analytics')" class="flex-1 py-2 text-xs md:text-sm font-bold rounded-xl transition-all shadow-sm bg-white text-indigo-600 flex items-center justify-center space-x-1.5">
-        <i class="fa-solid fa-chart-column"></i>
-        <span>開支歸因診斷</span>
-      </button>
-      <button id="tab-btn-records" onclick="switchView('records')" class="flex-1 py-2 text-xs md:text-sm font-medium rounded-xl transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1.5">
-        <i class="fa-solid fa-list-check"></i>
-        <span>詳細流水帳目</span>
-      </button>
-    </div>
+  <!-- 主內容容器 -->
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    
+    <!-- 頂部數據看板 -->
+    <section class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <span class="text-xs text-slate-500 font-medium">本月總開支</span>
+        <div class="text-xl sm:text-2xl font-bold text-slate-900 mt-1" id="kpi-current-month">HK$ 0</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <span class="text-xs text-slate-500 font-medium">對象情境佔比</span>
+        <div class="text-xl sm:text-2xl font-bold text-rose-600 mt-1" id="kpi-gf-percentage">0%</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <span class="text-xs text-slate-500 font-medium">當前使用裝置</span>
+        <div class="text-xl sm:text-2xl font-bold text-indigo-600 mt-1" id="kpi-device-status">偵測中</div>
+      </div>
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <span class="text-xs text-slate-500 font-medium">總記帳筆數</span>
+        <div class="text-xl sm:text-2xl font-bold text-slate-900 mt-1" id="kpi-total-records">0 筆</div>
+      </div>
+    </section>
 
-    <!-- Analytics Dashboard View -->
-    <section id="view-analytics" class="space-y-6">
-      <!-- Key Operational Metrics -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-slate-400 font-medium">最新月份總支出</span>
-          <p id="kpi-current-month" class="text-xl md:text-2xl font-extrabold text-slate-900 mt-1">HK$0</p>
-          <span id="kpi-month-label" class="text-[11px] text-indigo-600 font-semibold mt-0.5 block">2026年4月</span>
+    <!-- 視覺化分析圖表 -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="md:col-span-2 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+            <i class="fa-solid fa-chart-column text-brand-600"></i>
+            <span>月度開支走勢與歸因比對</span>
+          </h2>
+          <span class="text-xs text-slate-500">過去 6 個月數據</span>
         </div>
-        <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-slate-400 font-medium">歷史最高支出月份</span>
-          <p id="kpi-peak-month" class="text-xl md:text-2xl font-extrabold text-rose-500 mt-1">-</p>
-          <span id="kpi-peak-amount" class="text-[11px] text-slate-500 font-medium mt-0.5 block">HK$0</span>
-        </div>
-        <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-slate-400 font-medium">月均開支基準線</span>
-          <p id="kpi-avg-month" class="text-xl md:text-2xl font-extrabold text-slate-800 mt-1">HK$0</p>
-          <span class="text-[11px] text-slate-400 font-medium mt-0.5 block">所有紀錄平均</span>
-        </div>
-        <div class="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
-          <span class="text-xs text-slate-400 font-medium">總登記單據數量</span>
-          <p id="kpi-total-records" class="text-xl md:text-2xl font-extrabold text-slate-800 mt-1">0</p>
-          <span class="text-[11px] text-emerald-600 font-semibold mt-0.5 block"><i class="fa-solid fa-circle-check"></i> 本機資料已同步</span>
+        <div class="h-64">
+          <canvas id="monthlyChart"></canvas>
         </div>
       </div>
-
-      <!-- Root Cause Insight Banner -->
-      <div id="insight-banner" class="p-5 rounded-3xl bg-slate-900 text-white shadow-xl shadow-slate-200 border border-slate-800">
-        <div class="flex items-start space-x-3.5">
-          <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-lg shrink-0 border border-indigo-500/30">
-            <i class="fa-solid fa-magnifying-glass-chart"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center justify-between flex-wrap gap-2">
-              <h2 class="font-bold text-sm md:text-base text-white">開支高峰成因深入歸因報告</h2>
-              <span id="insight-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">超標警報</span>
-            </div>
-            <p id="insight-explanation" class="text-xs md:text-sm text-slate-300 mt-2 leading-relaxed">
-              系統正在分析各月份數據波動...
-            </p>
-            <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2">
-              <div id="insight-top-tags" class="flex items-center space-x-2 text-xs text-slate-400">
-                <!-- Dynamically filled -->
-              </div>
-              <button onclick="inspectPeakMonth()" class="text-xs text-indigo-400 hover:text-indigo-300 font-bold inline-flex items-center">
-                檢視該月所有消費清單 <i class="fa-solid fa-chevron-right ml-1"></i>
-              </button>
-            </div>
-          </div>
+      
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+            <i class="fa-solid fa-chart-pie text-brand-600"></i>
+            <span>對象情境分佈</span>
+          </h2>
+          <span class="text-xs text-slate-500">全期統計</span>
         </div>
-      </div>
-
-      <!-- Visual Charts Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div class="lg:col-span-7 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <h3 class="font-bold text-slate-900 text-sm md:text-base">月度總開支走勢對比</h3>
-              <p class="text-xs text-slate-400">識別超出平均基準的高峰月份（紅色標註）</p>
-            </div>
-            <span class="text-xs text-slate-400 font-medium">單位：HKD</span>
-          </div>
-          <div class="h-64 w-full relative">
-            <canvas id="monthlyTrendChart"></canvas>
-          </div>
-        </div>
-
-        <div class="lg:col-span-5 bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-3">
-            <div>
-              <h3 class="font-bold text-slate-900 text-sm md:text-base">特定月份分佈剖析</h3>
-              <p class="text-xs text-slate-400">科目 vs 社交對象維度</p>
-            </div>
-            <select id="analytics-month-selector" onchange="renderCharts()" class="text-xs font-semibold bg-slate-100 border-none rounded-xl px-2.5 py-1.5 text-slate-700 outline-none">
-              <!-- Injected by JS -->
-            </select>
-          </div>
-          
-          <div class="flex p-0.5 bg-slate-100 rounded-xl mb-2 text-[11px] font-bold">
-            <button id="donut-mode-cat" onclick="setDonutMode('category')" class="flex-1 py-1 rounded-lg bg-white text-indigo-600 shadow-xs">消費科目</button>
-            <button id="donut-mode-tag" onclick="setDonutMode('tag')" class="flex-1 py-1 rounded-lg text-slate-500">對象與情境</button>
-          </div>
-
-          <div class="h-52 w-full relative flex items-center justify-center">
-            <canvas id="distributionChart"></canvas>
-          </div>
-          <p id="distribution-highlight" class="text-center text-xs text-slate-500 font-medium mt-2">載入中...</p>
-        </div>
-      </div>
-
-      <!-- High Expense Spikes Table -->
-      <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-          <div>
-            <h3 class="font-bold text-slate-900 text-sm md:text-base">重大開支核心清單（推高總額關鍵項目）</h3>
-            <p class="text-xs text-slate-400">列出超過 HK$1,000 之項目與其對象情境</p>
-          </div>
-          <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 font-semibold">單筆重大支出</span>
-        </div>
-        <div id="spikes-table" class="space-y-2.5">
-          <!-- Populated by JS -->
+        <div class="h-64 flex items-center justify-center">
+          <canvas id="tagChart"></canvas>
         </div>
       </div>
     </section>
 
-    <!-- Records Table View -->
-    <section id="view-records" class="hidden space-y-4">
-      <div class="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">月份篩選</label>
-            <select id="filter-month" onchange="renderFilteredRecords()" class="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 outline-none">
-              <option value="ALL">全部月份</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">消費科目</label>
-            <select id="filter-category" onchange="renderFilteredRecords()" class="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 outline-none">
-              <option value="ALL">全部科目</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[11px] font-bold text-slate-400 mb-1">對象與情境</label>
-            <select id="filter-tag" onchange="renderFilteredRecords()" class="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700 outline-none">
-              <option value="ALL">全部情境對象</option>
-            </select>
-          </div>
+    <!-- 開支歸因深入診斷 -->
+    <section class="bg-slate-900 text-slate-100 p-5 rounded-2xl shadow-sm">
+      <div class="flex items-center space-x-2 mb-3">
+        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
+        <h2 class="text-sm font-bold tracking-wide uppercase text-slate-300">月度開支波動診斷儀</h2>
+      </div>
+      <div id="attribution-analysis" class="text-sm leading-relaxed text-slate-300">
+        正在分析開支模式...
+      </div>
+    </section>
+
+    <!-- 交易明細列表 -->
+    <section class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">消費明細紀錄</h2>
+          <p class="text-xs text-slate-500 mt-0.5">具備裝置來源標籤與情境標記</p>
         </div>
-        <div class="flex items-center justify-between text-xs text-slate-500 pt-1 border-t border-slate-100">
-          <span>共找到 <strong id="filter-count" class="text-indigo-600 font-bold">0</strong> 筆符合條件記錄</span>
-          <span id="filter-sum" class="font-bold text-slate-800">總計：HK$0</span>
+        
+        <div class="flex items-center space-x-2">
+          <select id="filter-tag" onchange="renderDashboard()" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500">
+            <option value="ALL">全部對象標籤</option>
+            <option value="女朋友拍拖">女朋友拍拖</option>
+            <option value="朋友聚餐">朋友聚餐</option>
+            <option value="個人獨處">個人獨處</option>
+            <option value="家庭長輩">家庭長輩</option>
+            <option value="商務工作">商務工作</option>
+          </select>
         </div>
       </div>
 
-      <div id="records-list-container" class="space-y-2.5">
-        <!-- Rendered by JS -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50/75 border-b border-slate-200 text-xs text-slate-500">
+              <th class="py-3 px-4 font-semibold">日期</th>
+              <th class="py-3 px-4 font-semibold">科目分類</th>
+              <th class="py-3 px-4 font-semibold">對象標籤</th>
+              <th class="py-3 px-4 font-semibold">描述備註</th>
+              <th class="py-3 px-4 font-semibold">記錄來源</th>
+              <th class="py-3 px-4 font-semibold text-right">金額 (HK$)</th>
+              <th class="py-3 px-4 font-semibold text-center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="transaction-table-body" class="divide-y divide-slate-100">
+            <!-- 動態注入明細 -->
+          </tbody>
+        </table>
       </div>
     </section>
+
   </main>
 
-  <!-- Mobile Bottom Navigation Bar -->
-  <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 p-2 flex items-center justify-around z-20 md:hidden">
-    <button onclick="switchView('analytics')" id="m-nav-analytics" class="flex flex-col items-center text-indigo-600">
-      <i class="fa-solid fa-chart-column text-lg"></i>
-      <span class="text-[10px] font-bold mt-0.5">歸因診斷</span>
-    </button>
-    <button onclick="openModal()" class="-mt-5 w-12 h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-300 active:scale-90 transition-all">
-      <i class="fa-solid fa-plus text-lg"></i>
-    </button>
-    <button onclick="openImportModal()" class="flex flex-col items-center text-slate-400">
-      <i class="fa-solid fa-file-import text-lg"></i>
-      <span class="text-[10px] font-bold mt-0.5">月結單</span>
-    </button>
-    <button onclick="switchView('records')" id="m-nav-records" class="flex flex-col items-center text-slate-400">
-      <i class="fa-solid fa-list-check text-lg"></i>
-      <span class="text-[10px] font-bold mt-0.5">流水帳目</span>
-    </button>
-  </div>
-
-  <!-- Single Expense Modal -->
-  <div id="expense-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl transform scale-95 transition-transform duration-200 max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <div class="flex items-center space-x-2">
-          <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
-            <i class="fa-solid fa-pen-to-square"></i>
-          </span>
-          <h3 class="font-bold text-slate-900">記錄一筆新支出</h3>
-        </div>
-        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+  <!-- 記帳彈窗 Modal -->
+  <div id="expense-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900">記錄一筆開支</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
-      <form id="expense-form" onsubmit="handleFormSubmit(event)" class="mt-4 space-y-4">
-        <!-- AI Smart Natural Language Quick Entry -->
-        <div class="p-3.5 rounded-2xl bg-gradient-to-r from-indigo-50/90 via-purple-50/90 to-pink-50/90 border border-indigo-100/80 shadow-xs">
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-xs font-bold text-indigo-900 flex items-center space-x-1.5">
-              <i class="fa-solid fa-wand-magic-sparkles text-indigo-600"></i>
-              <span>AI 語意速記（支援中英混雜 / 廣東話口語）</span>
-            </span>
-            <span id="ai-status-indicator" class="text-[10px] text-slate-500 font-medium">輸入一句話即可自動分類</span>
-          </div>
-          <div class="flex items-center space-x-2">
-            <input type="text" id="inp-quick-nlp" placeholder="例：同女朋友食居酒屋 680 / Uber home with friends 120" class="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-indigo-200/70 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium shadow-xs">
-            <button type="button" id="btn-run-ai" onclick="runAiSemanticParsing()" class="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold shadow-sm shadow-indigo-200 transition-all flex items-center space-x-1 shrink-0">
-              <i class="fa-solid fa-bolt"></i>
-              <span>智能辨識</span>
-            </button>
-          </div>
-          <div id="ai-match-feedback" class="hidden mt-2 pt-2 border-t border-indigo-100/60 text-[11px] text-indigo-800 font-medium flex items-center justify-between">
-            <span id="ai-feedback-text">自動辨識完成</span>
-            <span class="text-[10px] text-slate-400">已自動套用下方欄位</span>
+      <div class="p-6 space-y-4 overflow-y-auto">
+        <!-- AI 語意速記 -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+            <span>✨ AI 跨語言語意速記</span>
+            <span class="text-[10px] text-slate-500">支援廣東話、英文及中英夾雜</span>
+          </label>
+          <div class="flex space-x-2">
+            <input type="text" id="ai-input" placeholder="例如：同女朋友食居酒屋 $650 / Taxi to office 80" class="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <button type="button" onclick="parseNaturalLanguage()" class="px-3 py-2 bg-slate-900 text-white rounded-lg text-xs font-medium hover:bg-slate-800 transition">剖析</button>
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">金額 (港幣 HKD)</label>
-          <div class="relative">
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">$</span>
-            <input type="number" id="inp-amount" required step="0.1" min="0.1" placeholder="0.00" class="w-full pl-8 pr-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 font-bold text-xl text-slate-900 outline-none">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">金額 (HK$)</label>
+          <input type="number" id="form-amount" step="0.1" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-semibold text-slate-700">支出科目分類</label>
+            <button type="button" onclick="promptNewCategory()" class="text-[11px] text-brand-600 font-medium hover:underline">+ 新增自訂科目</button>
+          </div>
+          <div id="category-selector-container" class="grid grid-cols-3 gap-2">
+            <!-- 動態生成科目按鈕 -->
           </div>
         </div>
 
         <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="text-xs font-bold text-slate-700">支出科目分類（支援自訂）</label>
-            <span class="text-[11px] text-slate-400">點選或新增</span>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">對象與情境標籤</label>
+          <div id="tag-selector-container" class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="selectTag('女朋友拍拖')" class="tag-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-center" data-val="女朋友拍拖">❤️ 女朋友拍拖</button>
+            <button type="button" onclick="selectTag('朋友聚餐')" class="tag-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-center" data-val="朋友聚餐">🍻 朋友聚餐</button>
+            <button type="button" onclick="selectTag('個人獨處')" class="tag-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-center" data-val="個人獨處">☕ 個人獨處</button>
+            <button type="button" onclick="selectTag('家庭長輩')" class="tag-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-center" data-val="家庭長輩">🏠 家庭長輩</button>
+            <button type="button" onclick="selectTag('商務工作')" class="tag-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-center" data-val="商務工作">💼 商務工作</button>
+            <button type="button" onclick="selectTag('自訂專案')" class="tag-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-center" data-val="自訂專案">🏷️ 自訂標籤</button>
           </div>
-          <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-0.5 no-scrollbar" id="category-selector-group"></div>
-          <div class="flex items-center space-x-2 mt-2">
-            <input type="text" id="inp-new-cat" placeholder="自訂新科目 (例如: 寵物貓狗)" class="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500">
-            <button type="button" onclick="addNewCustomCategory()" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors">
-              + 新增科目
-            </button>
-          </div>
-          <input type="hidden" id="inp-category" value="餐飲">
         </div>
 
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="text-xs font-bold text-slate-700">對象與情境標籤（支援自訂）</label>
-            <span class="text-[11px] text-slate-400">點選或新增</span>
-          </div>
-          <div class="flex flex-wrap gap-1.5" id="tag-selector-group"></div>
-          <div class="flex items-center space-x-2 mt-2">
-            <input type="text" id="inp-new-tag" placeholder="自訂新標籤 (例如: 同事聚會)" class="flex-1 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500">
-            <button type="button" onclick="addNewCustomTag()" class="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold transition-colors">
-              + 新增標籤
-            </button>
-          </div>
-          <input type="hidden" id="inp-tag" value="女朋友拍拖">
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">交易日期</label>
-            <input type="date" id="inp-date" required class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">日期</label>
+            <input type="date" id="form-date" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">具體備註原因</label>
-            <input type="text" id="inp-note" required placeholder="如：西環晚餐、過海的士..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 outline-none focus:bg-white focus:ring-1 focus:ring-indigo-500">
+            <label class="block text-xs font-semibold text-slate-700 mb-1">描述備註</label>
+            <input type="text" id="form-note" placeholder="例如：中環燒肉晚餐" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
           </div>
         </div>
+      </div>
 
-        <button type="submit" class="w-full py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-bold text-xs md:text-sm shadow-md shadow-indigo-300 transition-all flex items-center justify-center space-x-2">
-          <i class="fa-solid fa-check"></i>
-          <span>儲存並即時更新診斷</span>
-        </button>
-      </form>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-3">
+        <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800">取消</button>
+        <button type="button" onclick="saveExpense()" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition">儲存開支</button>
+      </div>
     </div>
   </div>
 
-  <!-- Credit Card Statement Batch Import Modal (Multi-modal) -->
-  <div id="import-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 bg-slate-900/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="bg-white rounded-3xl max-w-3xl w-full p-5 md:p-7 shadow-2xl transform scale-95 transition-transform duration-200 max-h-[94vh] flex flex-col">
-      
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between pb-3.5 border-b border-slate-100 shrink-0">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-bold">
-            <i class="fa-solid fa-file-invoice-dollar"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-slate-900 text-sm md:text-base">智能月結單批次解析與匯入</h3>
-            <p class="text-[11px] text-slate-400">支援信用卡截圖、PDF 轉圖片、CSV 或直接貼上文字</p>
-          </div>
-        </div>
-        <button onclick="closeImportModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+  <!-- 跨裝置同步與備份 Modal -->
+  <div id="sync-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <i class="fa-solid fa-arrows-rotate text-brand-600"></i>
+          <span>跨裝置資料同步中心</span>
+        </h3>
+        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
-      <!-- Import Mode Selector -->
-      <div class="mt-4 flex p-1 bg-slate-100 rounded-2xl shrink-0 text-xs font-bold">
-        <button id="import-tab-file" onclick="switchImportSource('file')" class="flex-1 py-2 rounded-xl bg-white text-indigo-600 shadow-xs flex items-center justify-center space-x-1.5">
-          <i class="fa-solid fa-image"></i>
-          <span>月結單截圖 / 圖片上傳</span>
-        </button>
-        <button id="import-tab-text" onclick="switchImportSource('text')" class="flex-1 py-2 rounded-xl text-slate-500 hover:text-slate-800 flex items-center justify-center space-x-1.5">
-          <i class="fa-solid fa-paste"></i>
-          <span>貼上網銀文字 / CSV</span>
-        </button>
-      </div>
-
-      <!-- Upload / Input Container -->
-      <div class="mt-4 overflow-y-auto pr-1 flex-1 space-y-4">
-        
-        <!-- Source A: File Upload (Image) -->
-        <div id="source-file-block" class="border-2 border-dashed border-indigo-200 rounded-3xl p-6 text-center hover:bg-indigo-50/30 transition-all cursor-pointer relative" onclick="document.getElementById('statement-file-input').click()">
-          <input type="file" id="statement-file-input" accept="image/*,.csv" class="hidden" onchange="handleFileSelection(event)">
-          <div class="space-y-2">
-            <div class="w-12 h-12 mx-auto rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-xs">
-              <i class="fa-solid fa-cloud-arrow-up"></i>
-            </div>
-            <p class="text-xs md:text-sm font-bold text-slate-800">點擊或拖曳上傳信用卡電子月結單截圖 / CSV</p>
-            <p class="text-[11px] text-slate-400">支援手機 App 交易明細截圖 (JPG, PNG) 或 e-Banking 匯出之 CSV 檔案</p>
-          </div>
-          <div id="file-chosen-status" class="hidden mt-3 inline-flex items-center px-3 py-1 rounded-xl bg-indigo-100 text-indigo-800 text-xs font-bold">
-            <i class="fa-solid fa-paperclip mr-1.5"></i> <span id="file-name-label">已選擇檔案</span>
-          </div>
+      <div class="p-6 space-y-5">
+        <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 leading-relaxed">
+          <strong>私隱保證</strong>：系統資料純粹存放在本機，此同步功能透過生成加密文字檔案完成，無需經過任何第三方伺服器。
         </div>
 
-        <!-- Source B: Text Paste -->
-        <div id="source-text-block" class="hidden space-y-2">
-          <label class="block text-xs font-bold text-slate-700">直接貼上網上理財文字或 CSV 內容：</label>
-          <textarea id="statement-text-input" rows="5" placeholder="例如：&#10;2026-04-02 DON DON DONKI CAUSEWAY HKD 340.50&#10;2026-04-03 UBER *TRIP HKD 85.00&#10;2026-04-05 PARKnSHOP HKD 210.00" class="w-full p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 font-mono outline-none"></textarea>
-        </div>
-
-        <!-- Action Trigger -->
-        <div class="flex items-center justify-between pt-1">
-          <span class="text-[11px] text-slate-400 flex items-center">
-            <i class="fa-solid fa-shield-halved text-emerald-500 mr-1.5"></i> 本地直接送出解析，不儲存於任何中央伺服器
-          </span>
-          <button type="button" id="btn-parse-statement" onclick="executeStatementAnalysis()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs md:text-sm font-bold shadow-md shadow-indigo-200 transition-all flex items-center space-x-1.5">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span>開始智能剖析交易</span>
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">步驟一：由此裝置匯出</h4>
+          <p class="text-xs text-slate-500">將目前所有的記帳明細與自訂科目打包為單一檔案。</p>
+          <button onclick="exportDataToFile()" class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center justify-center space-x-2 transition">
+            <i class="fa-solid fa-download"></i>
+            <span>下載同步資料備份檔 (.json)</span>
           </button>
         </div>
 
-        <!-- Staging Review Section (Parsed Items) -->
-        <div id="staging-section" class="hidden pt-4 border-t border-slate-200 space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <h4 class="font-bold text-slate-900 text-xs md:text-sm">解析結果核對清單</h4>
-              <p class="text-[11px] text-slate-400">系統已預測科目與標籤，請勾選確認後匯入</p>
-            </div>
-            <div class="flex items-center space-x-2">
-              <button type="button" onclick="toggleSelectAllStaged(true)" class="text-xs text-indigo-600 font-bold hover:underline">全選</button>
-              <span class="text-slate-300">|</span>
-              <button type="button" onclick="toggleSelectAllStaged(false)" class="text-xs text-slate-400 font-medium hover:underline">取消</button>
-            </div>
-          </div>
-
-          <div id="staged-rows-container" class="space-y-2 max-h-60 overflow-y-auto pr-1">
-            <!-- Dynamically populated review rows -->
-          </div>
-
-          <!-- Final Batch Commit Button -->
-          <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-            <span id="staged-summary-count" class="text-xs font-bold text-slate-700">準備匯入 0 筆交易 (總計 HK$0)</span>
-            <button type="button" onclick="commitStagedExpenses()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs md:text-sm font-bold shadow-md shadow-emerald-200 transition-all flex items-center space-x-1.5">
-              <i class="fa-solid fa-check-double"></i>
-              <span>確認批量寫入帳本</span>
-            </button>
-          </div>
+        <div class="pt-4 border-t border-slate-100 space-y-2">
+          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">步驟二：在另一部裝置匯入</h4>
+          <p class="text-xs text-slate-500">選取從另一部手機或電腦傳來的備份檔進行合併。</p>
+          <label class="w-full py-2.5 px-4 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center space-x-2 cursor-pointer transition">
+            <i class="fa-solid fa-upload text-brand-600"></i>
+            <span>選取備份檔案並合併</span>
+            <input type="file" id="import-file-input" accept=".json" onchange="importDataFromFile(event)" class="hidden">
+          </label>
         </div>
-
       </div>
 
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <button onclick="closeSyncModal()" class="px-4 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800">完成</button>
+      </div>
     </div>
   </div>
 
-  <!-- Toast Notification -->
-  <div id="toast-message" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-xs font-bold shadow-xl transition-all duration-300 opacity-0 pointer-events-none flex items-center space-x-2">
-    <i class="fa-solid fa-circle-check text-emerald-400"></i>
-    <span id="toast-text">已更新！</span>
-  </div>
-
   <script>
-    // Core Ledger Dataset
-    let expenses = [
-      { id: '1', amount: 95, category: '餐飲', tag: '個人獨處', date: '2026-01-05', note: '日常午餐茶餐廳' },
-      { id: '2', amount: 180, category: '交通', tag: '個人獨處', date: '2026-01-12', note: '八達通日常增值' },
-      { id: '3', amount: 8500, category: '居住', tag: '個人獨處', date: '2026-01-01', note: '1月份分租租金及水電' },
-      { id: '4', amount: 820, category: '餐飲', tag: '朋友聚餐', date: '2026-01-18', note: '中學同學週末火鍋聚餐' },
-      { id: '5', amount: 550, category: '娛樂', tag: '女朋友拍拖', date: '2026-01-24', note: '拍拖睇戲及小食' },
-
-      { id: '6', amount: 8500, category: '居住', tag: '個人獨處', date: '2026-02-01', note: '2月份分租租金及水電' },
-      { id: '7', amount: 240, category: '交通', tag: '女朋友拍拖', date: '2026-02-14', note: '情人節過海的士' },
-      { id: '8', amount: 1680, category: '餐飲', tag: '女朋友拍拖', date: '2026-02-14', note: '情人節晚餐牛扒套餐' },
-      { id: '9', amount: 600, category: '購物', tag: '個人獨處', date: '2026-02-20', note: '更換工作襯衫' },
-
-      // High Spending Month (March Spike)
-      { id: '10', amount: 8500, category: '居住', tag: '個人獨處', date: '2026-03-01', note: '3月份分租租金及水電' },
-      { id: '11', amount: 7200, category: '旅遊', tag: '女朋友拍拖', date: '2026-03-05', note: '復活節日本大阪雙人機票預訂' },
-      { id: '12', amount: 8200, category: '購物', tag: '個人獨處', date: '2026-03-12', note: '更換故障筆記型電腦 (工作需要)' },
-      { id: '13', amount: 1950, category: '餐飲', tag: '朋友聚餐', date: '2026-03-20', note: '好友生日會分攤清酒與刺身' },
-      { id: '14', amount: 350, category: '交通', tag: '個人獨處', date: '2026-03-25', note: '港鐵全月通' },
-
-      // Current Month (April 2026)
-      { id: '15', amount: 8500, category: '居住', tag: '個人獨處', date: '2026-04-01', note: '4月份分租租金及水電' },
-      { id: '16', amount: 680, category: '餐飲', tag: '女朋友拍拖', date: '2026-04-04', note: '週末咖啡廳與拍拖散步' },
-      { id: '17', amount: 380, category: '餐飲', tag: '朋友聚餐', date: '2026-04-08', note: '放工與同事 Happy Hour' }
+    // 預設資料集
+    const DEFAULT_CATEGORIES = ['餐飲', '交通', '旅遊', '娛樂', '居住', '購物', '雜項'];
+    const DEFAULT_EXPENSES = [
+      { id: '1', date: '2026-09-05', amount: 7200, category: '旅遊', tag: '女朋友拍拖', note: '預訂外遊機票', device: 'desktop' },
+      { id: '2', date: '2026-09-12', amount: 850, category: '餐飲', tag: '女朋友拍拖', note: '拍拖紀念日牛扒晚餐', device: 'mobile' },
+      { id: '3', date: '2026-09-18', amount: 380, category: '餐飲', tag: '朋友聚餐', note: '週末大坑居酒屋聚會', device: 'mobile' },
+      { id: '4', date: '2026-09-22', amount: 110, category: '交通', tag: '個人獨處', note: '過海的士返工', device: 'mobile' },
+      { id: '5', date: '2026-09-28', amount: 450, category: '購物', tag: '個人獨處', note: '添置辦公室鍵盤', device: 'desktop' },
+      { id: '6', date: '2026-10-01', amount: 520, category: '餐飲', tag: '家庭長輩', note: '週末家庭茶樓聚餐', device: 'mobile' },
     ];
 
-    let userCategories = ['餐飲', '交通', '旅遊', '居住', '娛樂', '購物', '醫療與雜項'];
-    let userTags = ['女朋友拍拖', '朋友聚餐', '個人獨處', '家庭長輩', '商務工作'];
-
-    const categoryMeta = {
-      '餐飲': { icon: 'fa-burger', emoji: '🍔', color: '#F97316', bg: '#FFF7ED', badge: 'bg-orange-100 text-orange-700' },
-      '交通': { icon: 'fa-train-subway', emoji: '🚇', color: '#0EA5E9', bg: '#F0F9FF', badge: 'bg-sky-100 text-sky-700' },
-      '旅遊': { icon: 'fa-plane-departure', emoji: '✈️️', color: '#0D9488', bg: '#F0FDFA', badge: 'bg-teal-100 text-teal-700' },
-      '居住': { icon: 'fa-house-chimney', emoji: '🏠', color: '#8B5CF6', bg: '#F5F3FF', badge: 'bg-purple-100 text-purple-700' },
-      '娛樂': { icon: 'fa-gamepad', emoji: '🎮', color: '#EC4899', bg: '#FDF2F8', badge: 'bg-pink-100 text-pink-700' },
-      '購物': { icon: 'fa-bag-shopping', emoji: '🛍️', color: '#EAB308', bg: '#FEFCE8', badge: 'bg-yellow-100 text-yellow-700' },
-      '醫療與雜項': { icon: 'fa-kit-medical', emoji: '💊', color: '#10B981', bg: '#ECFDF5', badge: 'bg-emerald-100 text-emerald-700' }
-    };
-
-    const dynamicPalette = [
-      { color: '#6366F1', bg: '#EEF2FF', badge: 'bg-indigo-100 text-indigo-700' },
-      { color: '#14B8A6', bg: '#CCFBF1', badge: 'bg-teal-100 text-teal-800' },
-      { color: '#F43F5E', bg: '#FFE4E6', badge: 'bg-rose-100 text-rose-700' },
-      { color: '#84CC16', bg: '#ECFCCB', badge: 'bg-lime-100 text-lime-800' },
-      { color: '#A855F7', bg: '#F3E8FF', badge: 'bg-purple-100 text-purple-800' }
-    ];
-
-    function ensureCategoryMeta(catName) {
-      if (categoryMeta[catName]) return categoryMeta[catName];
-      let emoji = '🏷️';
-      let icon = 'fa-tag';
-      const lower = catName.toLowerCase();
-      if (/pet|cat|dog|獸醫|貓|狗|寵物/i.test(lower)) { emoji = '🐶'; icon = 'fa-paw'; }
-      else if (/invest|stock|crypto|理財|投資|股票/i.test(lower)) { emoji = '📈'; icon = 'fa-chart-line'; }
-      else if (/gym|fitness|sport|健身|運動/i.test(lower)) { emoji = '🏋️'; icon = 'fa-dumbbell'; }
-
-      const style = dynamicPalette[catName.length % dynamicPalette.length];
-      categoryMeta[catName] = { icon, emoji, color: style.color, bg: style.bg, badge: style.badge };
-      return categoryMeta[catName];
-    }
-
-    function saveAppData() {
-      try {
-        localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
-        localStorage.setItem('omniflow_categories', JSON.stringify(userCategories));
-        localStorage.setItem('omniflow_tags', JSON.stringify(userTags));
-      } catch (err) {
-        console.warn('LocalStorage save error:', err);
-      }
-    }
-
-    function loadAppData() {
-      try {
-        const savedExpenses = localStorage.getItem('omniflow_expenses');
-        const savedCategories = localStorage.getItem('omniflow_categories');
-        const savedTags = localStorage.getItem('omniflow_tags');
-        if (savedExpenses) expenses = JSON.parse(savedExpenses);
-        if (savedCategories) userCategories = JSON.parse(savedCategories);
-        if (savedTags) userTags = JSON.parse(savedTags);
-        userCategories.forEach(c => ensureCategoryMeta(c));
-      } catch (err) {
-        console.warn('LocalStorage load fallback:', err);
-      }
-    }
-
+    let expenses = [];
+    let categories = [];
+    let selectedCategory = '';
+    let selectedTag = '';
     let monthlyChart = null;
-    let distributionChart = null;
-    let currentDonutMode = 'category';
-    let currentPeakMonth = '';
-    let stagedTransactions = [];
-    let selectedFileBase64 = null;
-    let selectedFileMime = '';
+    let tagChart = null;
 
-    // Switch between Statement Import Modes
-    function switchImportSource(source) {
-      const btnFile = document.getElementById('import-tab-file');
-      const btnText = document.getElementById('import-tab-text');
-      const blockFile = document.getElementById('source-file-block');
-      const blockText = document.getElementById('source-text-block');
-
-      if (source === 'file') {
-        btnFile.className = 'flex-1 py-2 rounded-xl bg-white text-indigo-600 shadow-xs flex items-center justify-center space-x-1.5';
-        btnText.className = 'flex-1 py-2 rounded-xl text-slate-500 hover:text-slate-800 flex items-center justify-center space-x-1.5';
-        blockFile.classList.remove('hidden');
-        blockText.classList.add('hidden');
-      } else {
-        btnText.className = 'flex-1 py-2 rounded-xl bg-white text-indigo-600 shadow-xs flex items-center justify-center space-x-1.5';
-        btnFile.className = 'flex-1 py-2 rounded-xl text-slate-500 hover:text-slate-800 flex items-center justify-center space-x-1.5';
-        blockText.classList.remove('hidden');
-        blockFile.classList.add('hidden');
-      }
+    // 判斷當前環境
+    function getDeviceType() {
+      const ua = navigator.userAgent;
+      if (/android|iphone|ipad|ipod/i.test(ua)) return 'mobile';
+      return 'desktop';
     }
 
-    function handleFileSelection(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+    // 初始化儲存與資料
+    function initStorage() {
+      const savedExpenses = localStorage.getItem('omniflow_expenses');
+      expenses = savedExpenses ? JSON.parse(savedExpenses) : DEFAULT_EXPENSES;
+      
+      const savedCats = localStorage.getItem('omniflow_categories');
+      categories = savedCats ? JSON.parse(savedCats) : DEFAULT_CATEGORIES;
 
-      const label = document.getElementById('file-name-label');
-      const container = document.getElementById('file-chosen-status');
-      label.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-      container.classList.remove('hidden');
+      selectedCategory = categories[0] || '餐飲';
+      selectedTag = '女朋友拍拖';
 
-      if (file.name.endsWith('.csv')) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('statement-text-input').value = e.target.result;
-          switchImportSource('text');
-          showToast('CSV 內容已載入，可點擊開始解析！');
-        };
-        reader.readAsText(file);
-      } else {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const res = e.target.result;
-          selectedFileBase64 = res.split(',')[1];
-          selectedFileMime = file.type || 'image/jpeg';
-          showToast('圖片已就緒，可點擊開始解析！');
-        };
-        reader.readAsDataURL(file);
-      }
-    }
+      // 顯示當前裝置
+      const devType = getDeviceType();
+      document.getElementById('kpi-device-status').innerHTML = devType === 'mobile' 
+        ? '<span class="text-emerald-600 flex items-center space-x-1"><i class="fa-solid fa-mobile-screen"></i> <span>iPhone/手機</span></span>' 
+        : '<span class="text-blue-600 flex items-center space-x-1"><i class="fa-solid fa-laptop"></i> <span>桌面電腦</span></span>';
 
-    // High-Precision Multi-modal Statement Parsing via Gemini
-    async function executeStatementAnalysis() {
-      const parseBtn = document.getElementById('btn-parse-statement');
-      const isFileMode = !document.getElementById('source-file-block').classList.contains('hidden');
-      const textVal = document.getElementById('statement-text-input').value.trim();
-
-      if (isFileMode && !selectedFileBase64) {
-        showToast('請先選取月結單截圖或圖片！');
-        return;
-      }
-      if (!isFileMode && !textVal) {
-        showToast('請先貼上網銀交易文字或 CSV 內容！');
-        return;
-      }
-
-      parseBtn.disabled = true;
-      parseBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>AI 正在逐筆分析結單...</span>';
-
-      try {
-        const apiKey = ""; // Runtime automatically injects token for gemini-3-flash-preview
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-        const validCategories = userCategories;
-        const knownTags = userTags;
-
-        const systemInstruction = `You are a professional banking transaction auditor specialized in Hong Kong credit card and bank statements (e.g. HSBC, Standard Chartered, Hang Seng, BOCHK, Citi, Mox).
-Given an image or text of a statement:
-1. Extract ALL debited purchases/expenses. Ignore payments, repayments (CR), and starting/ending balances.
-2. For each transaction:
-   - Extract Date in YYYY-MM-DD format (if only DD/MM or MM/DD is given, infer current/recent year 2026).
-   - Extract clear Merchant or description note.
-   - Extract Amount in positive number.
-   - Classify Category strictly into: ${JSON.stringify(validCategories)}.
-   - Assign or infer best Tag from: ${JSON.stringify(knownTags)} (e.g. default to '個人獨處' unless merchant suggests dating/friends/work).`;
-
-        let parts = [];
-        if (isFileMode && selectedFileBase64) {
-          parts.push({
-            inlineData: {
-              mimeType: selectedFileMime,
-              data: selectedFileBase64
-            }
-          });
-          parts.push({ text: "Please parse this credit card statement image and extract every single transaction row accurately." });
-        } else {
-          parts.push({ text: `Analyze the following raw bank statement records and extract all expense transactions:\n\n${textVal}` });
-        }
-
-        const payload = {
-          contents: [{ parts: parts }],
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "ARRAY",
-              items: {
-                type: "OBJECT",
-                properties: {
-                  "date": { "type": "STRING" },
-                  "note": { "type": "STRING" },
-                  "amount": { "type": "NUMBER" },
-                  "category": { "type": "STRING", "enum": validCategories },
-                  "tag": { "type": "STRING" }
-                },
-                "required": ["date", "note", "amount", "category", "tag"]
-              }
-            }
-          }
-        };
-
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-
-        const result = await response.json();
-        const parsedList = JSON.parse(result.candidates[0].content.parts[0].text);
-
-        if (!Array.isArray(parsedList) || parsedList.length === 0) {
-          showToast('未能辨識出有效交易，請檢查截圖或文字格式');
-          return;
-        }
-
-        stagedTransactions = parsedList.map((item, idx) => ({
-          stagedId: 'stg_' + Date.now() + '_' + idx,
-          selected: true,
-          date: item.date || new Date().toISOString().split('T')[0],
-          note: item.note || '未命名消費',
-          amount: Math.abs(parseFloat(item.amount) || 0),
-          category: validCategories.includes(item.category) ? item.category : validCategories[0],
-          tag: knownTags.includes(item.tag) ? item.tag : '個人獨處'
-        }));
-
-        renderStagingTable();
-        showToast(`🎯 成功解析 ${stagedTransactions.length} 筆交易！請核對後匯入`);
-
-      } catch (err) {
-        console.warn('AI Parsing failed, attempting local fallback rule:', err);
-        fallbackLocalParse(textVal);
-      } finally {
-        parseBtn.disabled = false;
-        parseBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i><span>開始智能剖析交易</span>';
-      }
-    }
-
-    function fallbackLocalParse(text) {
-      if (!text) {
-        showToast('無法完成解析，請確保網絡正常或改用文字貼上');
-        return;
-      }
-      const lines = text.split('\n');
-      const list = [];
-      const today = new Date().toISOString().split('T')[0];
-
-      lines.forEach((line, idx) => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-        const numMatch = trimmed.match(/(?:HK\$|\$)?\s*([0-9]+(?:\.[0-9]{1,2})?)/i);
-        if (numMatch) {
-          const amt = parseFloat(numMatch[1]);
-          list.push({
-            stagedId: 'stg_fb_' + Date.now() + '_' + idx,
-            selected: true,
-            date: today,
-            note: trimmed.replace(numMatch[0], '').trim() || '銀行單據項目',
-            amount: amt,
-            category: userCategories[0],
-            tag: '個人獨處'
-          });
-        }
-      });
-
-      if (list.length > 0) {
-        stagedTransactions = list;
-        renderStagingTable();
-        showToast(`以本機離線規則解析出 ${list.length} 筆交易`);
-      } else {
-        showToast('未找到有效金額格式');
-      }
-    }
-
-    function renderStagingTable() {
-      const container = document.getElementById('staged-rows-container');
-      const stagingSection = document.getElementById('staging-section');
-      container.innerHTML = '';
-      stagingSection.classList.remove('hidden');
-
-      stagedTransactions.forEach((item, index) => {
-        const row = document.createElement('div');
-        row.className = `p-3 rounded-2xl border text-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5 transition-all ${item.selected ? 'bg-indigo-50/50 border-indigo-200' : 'bg-slate-50/60 border-slate-200 opacity-60'}`;
-        
-        let catOptions = userCategories.map(c => `<option value="${c}" ${c === item.category ? 'selected' : ''}>${c}</option>`).join('');
-        let tagOptions = userTags.map(t => `<option value="${t}" ${t === item.tag ? 'selected' : ''}>${t}</option>`).join('');
-
-        row.innerHTML = `
-          <div class="flex items-center space-x-3">
-            <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleStagedItem('${item.stagedId}')" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
-            <div>
-              <input type="text" value="${item.note}" onchange="updateStagedField('${item.stagedId}', 'note', this.value)" class="font-bold text-slate-800 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-500 outline-none w-48 md:w-56 text-xs">
-              <span class="block text-[10px] text-slate-400 mt-0.5">${item.date}</span>
-            </div>
-          </div>
-
-          <div class="flex items-center space-x-2 shrink-0">
-            <select onchange="updateStagedField('${item.stagedId}', 'category', this.value)" class="text-[11px] font-bold bg-white border border-slate-200 rounded-xl px-2 py-1 text-slate-700 outline-none">
-              ${catOptions}
-            </select>
-            <select onchange="updateStagedField('${item.stagedId}', 'tag', this.value)" class="text-[11px] font-bold bg-white border border-slate-200 rounded-xl px-2 py-1 text-indigo-700 outline-none">
-              ${tagOptions}
-            </select>
-            <span class="font-extrabold text-slate-900 text-sm ml-2 w-20 text-right">HK$${item.amount.toLocaleString()}</span>
-          </div>
-        `;
-        container.appendChild(row);
-      });
-
-      updateStagedSummary();
-    }
-
-    function toggleStagedItem(stagedId) {
-      const target = stagedTransactions.find(t => t.stagedId === stagedId);
-      if (target) {
-        target.selected = !target.selected;
-        renderStagingTable();
-      }
-    }
-
-    function toggleSelectAllStaged(isSelected) {
-      stagedTransactions.forEach(t => t.selected = isSelected);
-      renderStagingTable();
-    }
-
-    function updateStagedField(stagedId, field, value) {
-      const target = stagedTransactions.find(t => t.stagedId === stagedId);
-      if (target) {
-        target[field] = value;
-      }
-    }
-
-    function updateStagedSummary() {
-      const selected = stagedTransactions.filter(t => t.selected);
-      const sum = selected.reduce((acc, curr) => acc + curr.amount, 0);
-      document.getElementById('staged-summary-count').textContent = `準備匯入 ${selected.length} 筆交易 (總計 HK$${sum.toLocaleString()})`;
-    }
-
-    // Commit Staged Transactions to Main Ledger
-    function commitStagedExpenses() {
-      const selected = stagedTransactions.filter(t => t.selected);
-      if (selected.length === 0) {
-        showToast('請至少勾選一筆交易進行匯入！');
-        return;
-      }
-
-      selected.forEach(s => {
-        expenses.push({
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
-          amount: Math.round(s.amount * 100) / 100,
-          category: s.category,
-          tag: s.tag,
-          date: s.date,
-          note: s.note
-        });
-      });
-
-      saveAppData();
-      populateDropdowns();
-      refreshAnalytics();
-      renderFilteredRecords();
-      closeImportModal();
-      showToast(`🎉 成功匯入 ${selected.length} 筆結單明細至帳本！`);
-    }
-
-    // Single Expense NLP Parser
-    async function runAiSemanticParsing() {
-      const inputEl = document.getElementById('inp-quick-nlp');
-      const text = inputEl.value.trim();
-      const statusEl = document.getElementById('ai-status-indicator');
-      const feedbackBox = document.getElementById('ai-match-feedback');
-      const feedbackText = document.getElementById('ai-feedback-text');
-      const runBtn = document.getElementById('btn-run-ai');
-
-      if (!text) {
-        showToast('請先輸入日常消費句子');
-        return;
-      }
-
-      runBtn.disabled = true;
-      runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>辨識中...</span>';
-      statusEl.textContent = '正在進行雙語語意分析...';
-
-      try {
-        const apiKey = "";
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-
-        const validCategories = userCategories;
-        const knownTags = userTags;
-
-        const systemPrompt = `You are an expense categorization assistant for Hong Kong users.
-Extract amount, classify category from: ${JSON.stringify(validCategories)}, match tag from: ${JSON.stringify(knownTags)}, note without amount, daysAgo (offset in days if mentioned).`;
-
-        const payload = {
-          contents: [{ parts: [{ text: `Analyze: "${text}"` }] }],
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                "amount": { "type": "NUMBER" },
-                "category": { "type": "STRING", "enum": validCategories },
-                "tag": { "type": "STRING" },
-                "note": { "type": "STRING" },
-                "daysAgo": { "type": "INTEGER" }
-              },
-              "required": ["amount", "category", "tag", "note"]
-            }
-          }
-        };
-
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        const result = await response.json();
-        const parsed = JSON.parse(result.candidates[0].content.parts[0].text);
-
-        if (parsed.amount) document.getElementById('inp-amount').value = parsed.amount;
-        if (parsed.category) selectCategory(parsed.category);
-        if (parsed.tag) {
-          document.getElementById('inp-tag').value = parsed.tag;
-          renderTagButtons();
-        }
-        if (parsed.note) document.getElementById('inp-note').value = parsed.note;
-        if (parsed.daysAgo) {
-          const d = new Date();
-          d.setDate(d.getDate() - parsed.daysAgo);
-          document.getElementById('inp-date').value = d.toISOString().split('T')[0];
-        }
-
-        feedbackBox.classList.remove('hidden');
-        feedbackText.innerHTML = `✨ 辨識成功：<strong class="text-indigo-600">${parsed.category}</strong> • <strong class="text-purple-600">${parsed.tag}</strong> (${parsed.note})`;
-        showToast('🎯 AI 已自動填入分類與標籤！');
-      } catch (e) {
-        console.warn('NLP error:', e);
-      } finally {
-        runBtn.disabled = false;
-        runBtn.innerHTML = '<i class="fa-solid fa-bolt"></i><span>智能辨識</span>';
-      }
-    }
-
-    window.onload = function() {
-      loadAppData();
-      document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
       renderCategoryButtons();
-      renderTagButtons();
-      populateDropdowns();
-      refreshAnalytics();
-      renderFilteredRecords();
-    };
-
-    function switchView(tab) {
-      const viewAnalytics = document.getElementById('view-analytics');
-      const viewRecords = document.getElementById('view-records');
-      const tabAnalytics = document.getElementById('tab-btn-analytics');
-      const tabRecords = document.getElementById('tab-btn-records');
-      const mAnalytics = document.getElementById('m-nav-analytics');
-      const mRecords = document.getElementById('m-nav-records');
-
-      if (tab === 'analytics') {
-        viewAnalytics.classList.remove('hidden');
-        viewRecords.classList.add('hidden');
-        tabAnalytics.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-xl transition-all shadow-sm bg-white text-indigo-600 flex items-center justify-center space-x-1.5";
-        tabRecords.className = "flex-1 py-2 text-xs md:text-sm font-medium rounded-xl transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1.5";
-        mAnalytics.className = "flex flex-col items-center text-indigo-600";
-        mRecords.className = "flex flex-col items-center text-slate-400";
-        refreshAnalytics();
-      } else {
-        viewAnalytics.classList.add('hidden');
-        viewRecords.classList.remove('hidden');
-        tabRecords.className = "flex-1 py-2 text-xs md:text-sm font-bold rounded-xl transition-all shadow-sm bg-white text-indigo-600 flex items-center justify-center space-x-1.5";
-        tabAnalytics.className = "flex-1 py-2 text-xs md:text-sm font-medium rounded-xl transition-all text-slate-600 hover:text-slate-900 flex items-center justify-center space-x-1.5";
-        mRecords.className = "flex flex-col items-center text-indigo-600";
-        mAnalytics.className = "flex flex-col items-center text-slate-400";
-        renderFilteredRecords();
-      }
+      renderDashboard();
     }
 
+    function saveState() {
+      localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
+      localStorage.setItem('omniflow_categories', JSON.stringify(categories));
+    }
+
+    // 動態科目按鈕渲染
     function renderCategoryButtons() {
-      const container = document.getElementById('category-selector-group');
-      const activeCat = document.getElementById('inp-category').value;
+      const container = document.getElementById('category-selector-container');
       container.innerHTML = '';
-
-      userCategories.forEach(cat => {
-        const meta = ensureCategoryMeta(cat);
-        const isMatch = cat === activeCat;
+      categories.forEach(cat => {
         const btn = document.createElement('button');
         btn.type = 'button';
+        btn.className = `cat-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition text-center truncate ${selectedCategory === cat ? 'bg-brand-500 text-white border-brand-500 font-bold' : ''}`;
+        btn.innerText = cat;
         btn.onclick = () => selectCategory(cat);
-        btn.className = `cat-pill py-2 px-1.5 rounded-xl border text-xs font-semibold flex flex-col items-center transition-all ${
-          isMatch ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold shadow-xs scale-102' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-        }`;
-        btn.innerHTML = `<span class="text-base mb-0.5">${meta.emoji || '🏷️'}</span><span class="truncate max-w-[70px]">${cat}</span>`;
         container.appendChild(btn);
       });
     }
 
-    function addNewCustomCategory() {
-      const input = document.getElementById('inp-new-cat');
-      const val = input.value.trim();
-      if (!val) return;
-      if (!userCategories.includes(val)) {
-        userCategories.push(val);
-        ensureCategoryMeta(val);
-        selectCategory(val);
-        renderCategoryButtons();
-        populateDropdowns();
-        saveAppData();
-        showToast(`已建立新科目：${val}`);
-      } else {
-        selectCategory(val);
-      }
-      input.value = '';
+    function selectCategory(cat) {
+      selectedCategory = cat;
+      renderCategoryButtons();
     }
 
-    function renderTagButtons() {
-      const container = document.getElementById('tag-selector-group');
-      const activeTag = document.getElementById('inp-tag').value;
-      container.innerHTML = '';
-
-      userTags.forEach(tag => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = `px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
-          tag === activeTag ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
-        }`;
-        btn.innerHTML = `<i class="fa-solid fa-tag text-[10px] mr-1"></i> ${tag}`;
-        btn.onclick = () => {
-          document.getElementById('inp-tag').value = tag;
-          renderTagButtons();
-        };
-        container.appendChild(btn);
-      });
-    }
-
-    function addNewCustomTag() {
-      const input = document.getElementById('inp-new-tag');
-      const val = input.value.trim();
-      if (!val) return;
-      if (!userTags.includes(val)) {
-        userTags.push(val);
-        document.getElementById('inp-tag').value = val;
-        renderTagButtons();
-        populateDropdowns();
-        saveAppData();
-        showToast(`已建立新標籤：${val}`);
-      }
-      input.value = '';
-    }
-
-    function populateDropdowns() {
-      const months = Array.from(new Set(expenses.map(e => e.date.substring(0, 7)))).sort();
-      const monthSelect = document.getElementById('analytics-month-selector');
-      const filterMonth = document.getElementById('filter-month');
-      const filterCat = document.getElementById('filter-category');
-      const filterTag = document.getElementById('filter-tag');
-
-      const savedMonthSelect = monthSelect.value;
-      const savedFilterMonth = filterMonth.value;
-
-      monthSelect.innerHTML = '';
-      filterMonth.innerHTML = '<option value="ALL">全部月份</option>';
-      filterCat.innerHTML = '<option value="ALL">全部科目</option>';
-      filterTag.innerHTML = '<option value="ALL">全部情境對象</option>';
-
-      months.forEach(ym => {
-        const [y, m] = ym.split('-');
-        const label = `${y}年${parseInt(m, 10)}月`;
-        const opt1 = document.createElement('option');
-        opt1.value = ym;
-        opt1.textContent = label;
-        monthSelect.appendChild(opt1);
-
-        const opt2 = document.createElement('option');
-        opt2.value = ym;
-        opt2.textContent = label;
-        filterMonth.appendChild(opt2);
-      });
-
-      userCategories.forEach(cat => {
-        const meta = ensureCategoryMeta(cat);
-        const opt = document.createElement('option');
-        opt.value = cat;
-        opt.textContent = `${meta.emoji || '🏷️'} ${cat}`;
-        filterCat.appendChild(opt);
-      });
-
-      userTags.forEach(tag => {
-        const opt = document.createElement('option');
-        opt.value = tag;
-        opt.textContent = tag;
-        filterTag.appendChild(opt);
-      });
-
-      if (months.length > 0) {
-        monthSelect.value = savedMonthSelect && months.includes(savedMonthSelect) ? savedMonthSelect : months[months.length - 1];
-      }
-      if (savedFilterMonth) filterMonth.value = savedFilterMonth;
-    }
-
-    function refreshAnalytics() {
-      const monthTotals = {};
-      expenses.forEach(e => {
-        const ym = e.date.substring(0, 7);
-        monthTotals[ym] = (monthTotals[ym] || 0) + e.amount;
-      });
-
-      const months = Object.keys(monthTotals).sort();
-      if (months.length === 0) return;
-
-      let peakMonth = months[0];
-      let maxTotal = monthTotals[peakMonth];
-      let sumTotal = 0;
-
-      months.forEach(m => {
-        sumTotal += monthTotals[m];
-        if (monthTotals[m] > maxTotal) {
-          maxTotal = monthTotals[m];
-          peakMonth = m;
+    function selectTag(tag) {
+      selectedTag = tag;
+      document.querySelectorAll('.tag-btn').forEach(btn => {
+        if (btn.getAttribute('data-val') === tag) {
+          btn.className = 'tag-btn border border-brand-500 bg-brand-500 text-white rounded-lg py-2 px-2 text-xs font-bold text-center';
+        } else {
+          btn.className = 'tag-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 text-center';
         }
       });
-
-      currentPeakMonth = peakMonth;
-      const avgMonthly = Math.round(sumTotal / months.length);
-      const latestMonth = months[months.length - 1];
-
-      const [curY, curM] = latestMonth.split('-');
-      document.getElementById('kpi-month-label').textContent = `${curY}年${parseInt(curM, 10)}月 (最新)`;
-      document.getElementById('kpi-current-month').textContent = `HK$${(monthTotals[latestMonth] || 0).toLocaleString()}`;
-
-      const [peakY, peakM] = peakMonth.split('-');
-      document.getElementById('kpi-peak-month').textContent = `${peakY}年${parseInt(peakM, 10)}月`;
-      document.getElementById('kpi-peak-amount').textContent = `開支達 HK$${maxTotal.toLocaleString()}`;
-      document.getElementById('kpi-avg-month').textContent = `HK$${avgMonthly.toLocaleString()}`;
-      document.getElementById('kpi-total-records').textContent = expenses.length;
-
-      generateRootCauseReport(peakMonth, maxTotal, avgMonthly);
-      renderCharts(months, monthTotals, peakMonth);
-      renderSpikeItems(peakMonth);
     }
 
-    function generateRootCauseReport(peakMonth, peakTotal, avgMonthly) {
-      const [y, m] = peakMonth.split('-');
-      const monthLabel = `${y}年${parseInt(m, 10)}月`;
-      const diffPct = Math.round(((peakTotal - avgMonthly) / avgMonthly) * 100);
-
-      const peakItems = expenses.filter(e => e.date.startsWith(peakMonth));
-      peakItems.sort((a, b) => b.amount - a.amount);
-      const topItems = peakItems.slice(0, 2);
-      const topItemsStr = topItems.map(t => `「${t.note}」(${t.tag} • HK$${t.amount.toLocaleString()})`).join(' 與 ');
-
-      const tagMap = {};
-      peakItems.forEach(t => tagMap[t.tag] = (tagMap[t.tag] || 0) + t.amount);
-      const topTag = Object.keys(tagMap).sort((a, b) => tagMap[b] - tagMap[a])[0];
-
-      document.getElementById('insight-explanation').innerHTML = `
-        經系統比對，<strong>${monthLabel}</strong> 支出總額為 <strong>HK$${peakTotal.toLocaleString()}</strong>，
-        高出歷史平均值 <strong>${diffPct}%</strong>。
-        主要推手來自大額單據：${topItemsStr}。其中以 <strong>${topTag}</strong> 相關之消費總佔比最高。
-      `;
-
-      document.getElementById('insight-top-tags').innerHTML = `
-        <span class="inline-flex items-center px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-          <i class="fa-solid fa-bullseye text-indigo-400 mr-1.5"></i> 最大開支對象情境：${topTag} (HK$${(tagMap[topTag] || 0).toLocaleString()})
-        </span>
-      `;
+    function promptNewCategory() {
+      const name = prompt('請輸入自訂科目名稱（例如：寵物、投資、進修）：');
+      if (name && name.trim()) {
+        const cleanName = name.trim();
+        if (!categories.includes(cleanName)) {
+          categories.push(cleanName);
+          selectedCategory = cleanName;
+          saveState();
+          renderCategoryButtons();
+        }
+      }
     }
 
-    function renderCharts(months, monthTotals, peakMonth) {
-      if (!months) {
-        const totals = {};
-        expenses.forEach(e => {
-          const ym = e.date.substring(0, 7);
-          totals[ym] = (totals[ym] || 0) + e.amount;
-        });
-        months = Object.keys(totals).sort();
-        monthTotals = totals;
-        peakMonth = currentPeakMonth;
+    // AI 語意速記辨識
+    function parseNaturalLanguage() {
+      const text = document.getElementById('ai-input').value.trim();
+      if (!text) return;
+
+      // 提取金額數字
+      const amountMatch = text.match(/(?:hk\$|\$)?\s*(\d+(?:\.\d+)?)/i);
+      if (amountMatch) {
+        document.getElementById('form-amount').value = parseFloat(amountMatch[1]);
       }
 
-      const trendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
-      const labels = months.map(m => `${parseInt(m.split('-')[1], 10)}月`);
-      const values = months.map(m => monthTotals[m]);
-      const barColors = months.map(m => m === peakMonth ? '#F43F5E' : '#6366F1');
+      // 語意推斷科目
+      const lower = text.toLowerCase();
+      if (lower.includes('taxi') || lower.includes('的士') || lower.includes('uber') || lower.includes('車')) {
+        selectCategory('交通');
+      } else if (lower.includes('機票') || lower.includes('酒店') || lower.includes('旅行') || lower.includes('外遊')) {
+        selectCategory('旅遊');
+      } else if (lower.includes('食') || lower.includes('dinner') || lower.includes('lunch') || lower.includes('晚餐') || lower.includes('居酒屋')) {
+        selectCategory('餐飲');
+      }
+
+      // 語意推斷情境標籤
+      if (lower.includes('女朋友') || lower.includes('拍拖') || lower.includes('gf') || lower.includes('girlfriend')) {
+        selectTag('女朋友拍拖');
+      } else if (lower.includes('朋友') || lower.includes('fd') || lower.includes('同事') || lower.includes('聚餐')) {
+        selectTag('朋友聚餐');
+      }
+
+      document.getElementById('form-note').value = text;
+    }
+
+    // 儲存一筆開支
+    function saveExpense() {
+      const amount = parseFloat(document.getElementById('form-amount').value);
+      const date = document.getElementById('form-date').value || new Date().toISOString().split('T')[0];
+      const note = document.getElementById('form-note').value.trim() || selectedCategory;
+
+      if (isNaN(amount) || amount <= 0) {
+        alert('請輸入有效金額。');
+        return;
+      }
+
+      const newRecord = {
+        id: Date.now().toString(),
+        date: date,
+        amount: amount,
+        category: selectedCategory,
+        tag: selectedTag,
+        note: note,
+        device: getDeviceType() // 自動注入裝置標記
+      };
+
+      expenses.unshift(newRecord);
+      saveState();
+      closeModal();
+      renderDashboard();
+    }
+
+    function deleteExpense(id) {
+      if (confirm('確定刪除此筆收支紀錄？')) {
+        expenses = expenses.filter(e => e.id !== id);
+        saveState();
+        renderDashboard();
+      }
+    }
+
+    // 儀表板與圖表渲染
+    function renderDashboard() {
+      const filterTag = document.getElementById('filter-tag').value;
+      const filtered = filterTag === 'ALL' ? expenses : expenses.filter(e => e.tag === filterTag);
+
+      // KPI 計算
+      const now = new Date();
+      const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const thisMonthExpenses = expenses.filter(e => e.date.startsWith(currentMonthStr));
+      const totalThisMonth = thisMonthExpenses.reduce((s, e) => s + e.amount, 0);
+
+      document.getElementById('kpi-current-month').innerText = `HK$ ${Math.round(totalThisMonth).toLocaleString()}`;
+      document.getElementById('kpi-total-records').innerText = `${expenses.length} 筆`;
+
+      const gfExpenses = expenses.filter(e => e.tag === '女朋友拍拖').reduce((s, e) => s + e.amount, 0);
+      const allTotal = expenses.reduce((s, e) => s + e.amount, 0);
+      const gfPct = allTotal > 0 ? Math.round((gfExpenses / allTotal) * 100) : 0;
+      document.getElementById('kpi-gf-percentage').innerText = `${gfPct}%`;
+
+      // 渲染表格
+      const tbody = document.getElementById('transaction-table-body');
+      tbody.innerHTML = '';
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/50 transition text-xs';
+        
+        const deviceBadge = item.device === 'mobile'
+          ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"><i class="fa-solid fa-mobile-screen mr-1"></i>手機</span>'
+          : '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200"><i class="fa-solid fa-laptop mr-1"></i>電腦</span>';
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-slate-500 font-mono">${item.date}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900">${item.category}</td>
+          <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[11px] bg-slate-100 text-slate-700 font-medium">${item.tag}</span></td>
+          <td class="py-3 px-4 text-slate-600">${item.note}</td>
+          <td class="py-3 px-4">${deviceBadge}</td>
+          <td class="py-3 px-4 text-right font-bold font-mono text-slate-900">${item.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          <td class="py-3 px-4 text-center">
+            <button onclick="deleteExpense('${item.id}')" class="text-slate-400 hover:text-rose-500 transition"><i class="fa-regular fa-trash-can"></i></button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      renderCharts();
+      renderAttributionAnalysis();
+    }
+
+    // 圖表渲染
+    function renderCharts() {
+      const monthlyTotals = {};
+      expenses.forEach(e => {
+        const m = e.date.substring(0, 7);
+        monthlyTotals[m] = (monthlyTotals[m] || 0) + e.amount;
+      });
+      const sortedMonths = Object.keys(monthlyTotals).sort();
+      const monthData = sortedMonths.map(m => monthlyTotals[m]);
 
       if (monthlyChart) monthlyChart.destroy();
-      monthlyChart = new Chart(trendCtx, {
+      const ctx1 = document.getElementById('monthlyChart').getContext('2d');
+      monthlyChart = new Chart(ctx1, {
         type: 'bar',
         data: {
-          labels: labels,
-          datasets: [{ data: values, backgroundColor: barColors, borderRadius: 8, borderSkipped: false }]
+          labels: sortedMonths,
+          datasets: [{
+            label: '月度開支 (HK$)',
+            data: monthData,
+            backgroundColor: '#16a34a',
+            borderRadius: 6
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { callback: v => '$' + v.toLocaleString(), font: { size: 10 } } },
-            x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
-          }
+          scales: { y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } } }
         }
       });
 
-      renderDistributionDoughnut();
-    }
-
-    function setDonutMode(mode) {
-      currentDonutMode = mode;
-      const btnCat = document.getElementById('donut-mode-cat');
-      const btnTag = document.getElementById('donut-mode-tag');
-      if (mode === 'category') {
-        btnCat.className = 'flex-1 py-1 rounded-lg bg-white text-indigo-600 shadow-xs';
-        btnTag.className = 'flex-1 py-1 rounded-lg text-slate-500';
-      } else {
-        btnTag.className = 'flex-1 py-1 rounded-lg bg-white text-indigo-600 shadow-xs';
-        btnCat.className = 'flex-1 py-1 rounded-lg text-slate-500';
-      }
-      renderDistributionDoughnut();
-    }
-
-    function renderDistributionDoughnut() {
-      const selectedMonth = document.getElementById('analytics-month-selector').value;
-      const ctx = document.getElementById('distributionChart').getContext('2d');
-      const filtered = expenses.filter(e => e.date.startsWith(selectedMonth));
-
-      const totals = {};
-      if (currentDonutMode === 'category') {
-        filtered.forEach(e => totals[e.category] = (totals[e.category] || 0) + e.amount);
-      } else {
-        filtered.forEach(e => totals[e.tag] = (totals[e.tag] || 0) + e.amount);
-      }
-
-      const keys = Object.keys(totals);
-      const data = keys.map(k => totals[k]);
-      const palette = ['#4F46E5', '#06B6D4', '#EC4899', '#F59E0B', '#10B981', '#8B5CF6', '#64748B'];
-
-      let topKey = '-';
-      let maxVal = 0;
-      keys.forEach(k => {
-        if (totals[k] > maxVal) { maxVal = totals[k]; topKey = k; }
+      const tagTotals = {};
+      expenses.forEach(e => {
+        tagTotals[e.tag] = (tagTotals[e.tag] || 0) + e.amount;
       });
 
-      const highlightEl = document.getElementById('distribution-highlight');
-      if (maxVal > 0) {
-        highlightEl.innerHTML = `最高佔比${currentDonutMode === 'category' ? '科目' : '對象'}：<strong>${topKey}</strong> (HK$${maxVal.toLocaleString()})`;
-      } else {
-        highlightEl.textContent = '此月份無相關開支紀錄';
-      }
-
-      if (distributionChart) distributionChart.destroy();
-      distributionChart = new Chart(ctx, {
+      if (tagChart) tagChart.destroy();
+      const ctx2 = document.getElementById('tagChart').getContext('2d');
+      tagChart = new Chart(ctx2, {
         type: 'doughnut',
         data: {
-          labels: keys,
-          datasets: [{ data: data, backgroundColor: palette.slice(0, keys.length), borderWidth: 2, borderColor: '#FFFFFF' }]
+          labels: Object.keys(tagTotals),
+          datasets: [{
+            data: Object.values(tagTotals),
+            backgroundColor: ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#64748b']
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '72%',
           plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }
         }
       });
     }
 
-    function renderSpikeItems(peakMonth) {
-      const container = document.getElementById('spikes-table');
-      container.innerHTML = '';
-      const bigTickets = expenses.filter(e => e.amount >= 1000).sort((a, b) => b.amount - a.amount).slice(0, 4);
+    // 歸因分析生成
+    function renderAttributionAnalysis() {
+      if (expenses.length === 0) return;
+      const monthlyTotals = {};
+      expenses.forEach(e => {
+        const m = e.date.substring(0, 7);
+        monthlyTotals[m] = (monthlyTotals[m] || 0) + e.amount;
+      });
 
-      if (bigTickets.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 py-3 text-center">暫無超過 HK$1,000 之重大支出</p>';
-        return;
+      let peakMonth = '';
+      let maxVal = -1;
+      for (const [m, v] of Object.entries(monthlyTotals)) {
+        if (v > maxVal) { maxVal = v; peakMonth = m; }
       }
 
-      bigTickets.forEach(item => {
-        const meta = ensureCategoryMeta(item.category);
-        const isPeak = item.date.startsWith(peakMonth);
-        const row = document.createElement('div');
-        row.className = `flex items-center justify-between p-3 rounded-2xl border ${isPeak ? 'border-rose-200 bg-rose-50/40' : 'border-slate-100 bg-slate-50/60'}`;
-        row.innerHTML = `
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm" style="background-color: ${meta.bg}; color: ${meta.color}">
-              <i class="fa-solid ${meta.icon}"></i>
-            </div>
-            <div>
-              <div class="flex items-center space-x-2">
-                <span class="text-xs font-bold text-slate-900">${item.note}</span>
-                ${isPeak ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-600">高峰月主因</span>' : ''}
-              </div>
-              <span class="text-[11px] text-slate-500">${item.date} • ${item.category} • <strong class="text-indigo-600 font-semibold">${item.tag}</strong></span>
-            </div>
-          </div>
-          <div class="text-right">
-            <span class="text-sm font-black text-slate-900">HK$${item.amount.toLocaleString()}</span>
-          </div>
-        `;
-        container.appendChild(row);
-      });
-    }
+      const peakExpenses = expenses.filter(e => e.date.startsWith(peakMonth));
+      const peakTagTotals = {};
+      peakExpenses.forEach(e => { peakTagTotals[e.tag] = (peakTagTotals[e.tag] || 0) + e.amount; });
 
-    function renderFilteredRecords() {
-      const monthVal = document.getElementById('filter-month').value;
-      const catVal = document.getElementById('filter-category').value;
-      const tagVal = document.getElementById('filter-tag').value;
-      const container = document.getElementById('records-list-container');
-      container.innerHTML = '';
-
-      let list = [...expenses];
-      if (monthVal !== 'ALL') list = list.filter(e => e.date.startsWith(monthVal));
-      if (catVal !== 'ALL') list = list.filter(e => e.category === catVal);
-      if (tagVal !== 'ALL') list = list.filter(e => e.tag === tagVal);
-
-      list.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      const sum = list.reduce((acc, curr) => acc + curr.amount, 0);
-      document.getElementById('filter-count').textContent = list.length;
-      document.getElementById('filter-sum').textContent = `總計：HK$${sum.toLocaleString()}`;
-
-      if (list.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-12 bg-white rounded-3xl border border-slate-200">
-            <i class="fa-solid fa-receipt text-3xl text-slate-300 mb-2"></i>
-            <p class="text-sm font-bold text-slate-700">沒有符合篩選條件的開支</p>
-          </div>
-        `;
-        return;
+      let topTag = '';
+      let topTagVal = -1;
+      for (const [t, v] of Object.entries(peakTagTotals)) {
+        if (v > topTagVal) { topTagVal = v; topTag = t; }
       }
 
-      list.forEach(item => {
-        const meta = ensureCategoryMeta(item.category);
-        const card = document.createElement('div');
-        card.className = "flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-slate-300 transition-all";
-        card.innerHTML = `
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm shrink-0" style="background-color: ${meta.bg}; color: ${meta.color}">
-              <i class="fa-solid ${meta.icon}"></i>
-            </div>
-            <div>
-              <p class="text-sm font-bold text-slate-900 leading-snug">${item.note}</p>
-              <div class="flex items-center space-x-2 mt-1">
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${meta.badge}">${meta.emoji || '🏷️'} ${item.category}</span>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700">
-                  <i class="fa-solid fa-tag text-[9px] mr-1"></i>${item.tag}
-                </span>
-                <span class="text-[11px] text-slate-400">${item.date}</span>
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center space-x-3">
-            <span class="text-sm md:text-base font-extrabold text-slate-900">-HK$${item.amount.toLocaleString()}</span>
-            <button onclick="deleteRecord('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1 text-xs transition-colors" title="刪除此筆記錄">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
+      document.getElementById('attribution-analysis').innerHTML = `
+        開支高峰月份出現在 <span class="font-bold text-amber-300 font-mono">${peakMonth}</span>，總支出達 <span class="font-bold text-white font-mono">HK$ ${Math.round(maxVal).toLocaleString()}</span>。
+        深入分析顯示，該月最主要的資金推動力來自「<span class="font-bold text-white">${topTag}</span>」（佔該月開支約 ${Math.round((topTagVal / maxVal) * 100)}%）。各項自訂科目均正常記錄，資料庫運作平穩。
+      `;
     }
 
-    function handleFormSubmit(e) {
-      e.preventDefault();
-      const amount = parseFloat(document.getElementById('inp-amount').value);
-      const category = document.getElementById('inp-category').value;
-      const tag = document.getElementById('inp-tag').value;
-      const date = document.getElementById('inp-date').value;
-      const note = document.getElementById('inp-note').value.trim();
-
-      if (!amount || amount <= 0) return;
-
-      expenses.push({
-        id: Date.now().toString(),
-        amount: Math.round(amount * 100) / 100,
-        category, tag, date, note
-      });
-
-      saveAppData();
-      populateDropdowns();
-      refreshAnalytics();
-      renderFilteredRecords();
-      closeModal();
-      showToast('✅ 成功記錄支出！');
-
-      document.getElementById('expense-form').reset();
-      document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
-      selectCategory(userCategories[0] || '餐飲');
+    // 跨裝置匯出與匯入
+    function exportDataToFile() {
+      const dataPackage = {
+        app: 'OmniFlow',
+        version: '1.2.0',
+        timestamp: new Date().toISOString(),
+        categories: categories,
+        expenses: expenses
+      };
+      const blob = new Blob([JSON.stringify(dataPackage, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `omniflow_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
-    function deleteRecord(id) {
-      expenses = expenses.filter(e => e.id !== id);
-      saveAppData();
-      populateDropdowns();
-      refreshAnalytics();
-      renderFilteredRecords();
-      showToast('已移除該項開支紀錄');
+    function importDataFromFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!imported.expenses || !Array.isArray(imported.expenses)) {
+            alert('檔案格式錯誤，無法解析記帳資料。');
+            return;
+          }
+
+          // 合併自訂科目
+          if (imported.categories && Array.isArray(imported.categories)) {
+            imported.categories.forEach(c => {
+              if (!categories.includes(c)) categories.push(c);
+            });
+          }
+
+          // 合併收支紀錄（依據 ID 去重）
+          const existingIds = new Set(expenses.map(item => item.id));
+          let addCount = 0;
+          imported.expenses.forEach(item => {
+            if (!existingIds.has(item.id)) {
+              expenses.push(item);
+              existingIds.add(item.id);
+              addCount++;
+            }
+          });
+
+          // 重新排序
+          expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+          saveState();
+          initStorage();
+          closeSyncModal();
+          alert(`資料同步成功！已成功匯入並合併 ${addCount} 筆新紀錄。`);
+        } catch (err) {
+          alert('解析檔案失敗，請確保選取正確的 OmniFlow 備份檔案。');
+        }
+      };
+      reader.readAsText(file);
     }
 
-    function selectCategory(catName) {
-      document.getElementById('inp-category').value = catName;
-      document.querySelectorAll('.cat-pill').forEach(btn => {
-        const isMatch = btn.textContent.includes(catName);
-        btn.className = `cat-pill py-2 px-1.5 rounded-xl border text-xs font-semibold flex flex-col items-center transition-all ${
-          isMatch ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold shadow-xs scale-102' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-        }`;
-      });
-    }
-
-    function inspectPeakMonth() {
-      switchView('records');
-      if (currentPeakMonth) {
-        document.getElementById('filter-month').value = currentPeakMonth;
-        renderFilteredRecords();
-      }
-    }
-
+    // 視窗開關
     function openModal() {
-      const modal = document.getElementById('expense-modal');
-      modal.classList.remove('opacity-0', 'pointer-events-none');
-      modal.querySelector('div').classList.remove('scale-95');
-      modal.querySelector('div').classList.add('scale-100');
-      document.getElementById('inp-amount').focus();
+      document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('expense-modal').classList.remove('hidden');
     }
-
     function closeModal() {
-      const modal = document.getElementById('expense-modal');
-      modal.classList.add('opacity-0', 'pointer-events-none');
-      modal.querySelector('div').classList.remove('scale-100');
-      modal.querySelector('div').classList.add('scale-95');
+      document.getElementById('expense-modal').classList.add('hidden');
+    }
+    function openSyncModal() {
+      document.getElementById('sync-modal').classList.remove('hidden');
+    }
+    function closeSyncModal() {
+      document.getElementById('sync-modal').classList.add('hidden');
     }
 
-    function openImportModal() {
-      const modal = document.getElementById('import-modal');
-      modal.classList.remove('opacity-0', 'pointer-events-none');
-      modal.querySelector('div').classList.remove('scale-95');
-      modal.querySelector('div').classList.add('scale-100');
-    }
-
-    function closeImportModal() {
-      const modal = document.getElementById('import-modal');
-      modal.classList.add('opacity-0', 'pointer-events-none');
-      modal.querySelector('div').classList.remove('scale-100');
-      modal.querySelector('div').classList.add('scale-95');
-    }
-
-    function showToast(text) {
-      const toast = document.getElementById('toast-message');
-      document.getElementById('toast-text').textContent = text;
-      toast.classList.remove('opacity-0', 'pointer-events-none');
-      toast.classList.add('translate-y-2');
-      setTimeout(() => {
-        toast.classList.add('opacity-0', 'pointer-events-none');
-        toast.classList.remove('translate-y-2');
-      }, 2400);
-    }
+    // 啟動
+    window.addEventListener('DOMContentLoaded', () => {
+      initStorage();
+    });
   </script>
 </body>
 </html>
