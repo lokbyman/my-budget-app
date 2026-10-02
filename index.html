@@ -52,18 +52,22 @@
         <div>
           <div class="flex items-center space-x-2">
             <h1 class="text-base font-bold text-slate-900 leading-none">OmniFlow</h1>
-            <span id="sync-status-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">離線模式</span>
+            <span id="sync-status-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">連線中...</span>
           </div>
           <p class="text-xs text-slate-500 mt-0.5">全自動雲端同步與開支歸因儀</p>
         </div>
       </div>
       
       <div class="flex items-center space-x-2">
+        <button onclick="openImportModal()" class="px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-file-invoice-dollar text-slate-600"></i>
+          <span class="hidden sm:inline">匯入月結單</span>
+        </button>
         <button onclick="openAuthModal()" id="auth-btn" class="px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center space-x-1.5">
           <i class="fa-solid fa-shield-halved text-brand-600"></i>
-          <span id="auth-btn-label">雲端連線 / 登入</span>
+          <span id="auth-btn-label">帳號管理</span>
         </button>
-        <button onclick="openModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition flex items-center space-x-1.5">
+        <button onclick="openModalForCreate()" class="px-3.5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition flex items-center space-x-1.5">
           <i class="fa-solid fa-plus"></i>
           <span>記帳</span>
         </button>
@@ -85,8 +89,8 @@
         <div class="text-xl sm:text-2xl font-bold text-rose-600 mt-1" id="kpi-gf-percentage">0%</div>
       </div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-        <span class="text-xs text-slate-500 font-medium">資料庫同步狀態</span>
-        <div class="text-sm font-semibold text-slate-800 mt-2 truncate" id="kpi-cloud-status">未連接雲端</div>
+        <span class="text-xs text-slate-500 font-medium">雲端同步狀態</span>
+        <div class="text-sm font-semibold text-slate-800 mt-2 truncate" id="kpi-cloud-status">檢查中...</div>
       </div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
         <span class="text-xs text-slate-500 font-medium">已同步筆數</span>
@@ -102,7 +106,7 @@
             <i class="fa-solid fa-chart-column text-brand-600"></i>
             <span>月度開支走勢分析</span>
           </h2>
-          <span class="text-xs text-slate-500">自動雲端彙整</span>
+          <span class="text-xs text-slate-500">雲端即時彙整</span>
         </div>
         <div class="h-64">
           <canvas id="monthlyChart"></canvas>
@@ -139,7 +143,7 @@
       <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 class="text-base font-bold text-slate-900">消費明細紀錄</h2>
-          <p class="text-xs text-slate-500 mt-0.5">自動同步於所有已授權裝置</p>
+          <p class="text-xs text-slate-500 mt-0.5">點擊筆形圖示即可隨時修訂紀錄</p>
         </div>
         
         <div class="flex items-center space-x-2">
@@ -176,17 +180,17 @@
 
   </main>
 
-  <!-- 記帳彈窗 Modal -->
+  <!-- 記帳與編輯彈窗 Modal -->
   <div id="expense-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
       <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 class="text-base font-bold text-slate-900">記錄一筆開支</h3>
+        <h3 class="text-base font-bold text-slate-900" id="modal-title">記錄一筆開支</h3>
         <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
       <div class="p-6 space-y-4 overflow-y-auto">
-        <!-- AI 語意速記 -->
-        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+        <!-- AI 語意速記（僅在新增時顯示，編輯時自動隱藏避免誤覆寫） -->
+        <div id="ai-input-container" class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
             <span>✨ AI 跨語言語意速記</span>
             <span class="text-[10px] text-slate-500">自動分拆科目與情境</span>
@@ -199,7 +203,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">金額 (HK$)</label>
-          <input type="number" id="form-amount" step="0.1" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          <input type="number" id="form-amount" step="0.1" placeholder="0.00" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono">
         </div>
 
         <div>
@@ -238,12 +242,51 @@
 
       <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-3">
         <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800">取消</button>
-        <button type="button" onclick="saveExpense()" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition">儲存並自動同步</button>
+        <button type="button" onclick="saveExpense()" id="modal-submit-btn" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition">儲存並即時同步</button>
       </div>
     </div>
   </div>
 
-  <!-- 雲端連線與帳號防護 Modal -->
+  <!-- 匯入月結單 Modal -->
+  <div id="import-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+          <i class="fa-solid fa-file-invoice-dollar text-brand-600"></i>
+          <span>信用卡月結單批次匯入</span>
+        </h3>
+        <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="p-6 space-y-4 overflow-y-auto">
+        <div class="p-3 bg-blue-50 rounded-xl border border-blue-200 text-xs text-blue-800 leading-relaxed">
+          支援直接貼上網上理財（如 HSBC、Mox、恒生）的文字明細或 CSV。系統會自動辨識商戶並建議科目。
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">貼上月結單文字內容</label>
+          <textarea id="import-text" rows="5" placeholder="例如：&#10;2026-09-08 DON DON DONKI HKD 350.00&#10;2026-09-10 UBER TRIP HONG KONG HKD 85.00" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-mono"></textarea>
+        </div>
+
+        <button type="button" onclick="parseStatementText()" class="w-full py-2.5 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 transition">
+          <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>開始智能分析交易明細
+        </button>
+
+        <div id="staging-area" class="hidden space-y-3 pt-3 border-t border-slate-100">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-900">待核對清單 (<span id="staging-count">0</span> 筆)</span>
+            <span class="text-[11px] text-slate-500">可核實後一鍵寫入雲端</span>
+          </div>
+          <div id="staging-list" class="max-h-48 overflow-y-auto space-y-2"></div>
+          <button type="button" onclick="commitStagingExpenses()" class="w-full py-2.5 bg-brand-600 text-white rounded-lg text-xs font-semibold hover:bg-brand-500 transition shadow-sm">
+            確認批次寫入雲端總帳
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 雲端帳號安全 Modal -->
   <div id="auth-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -256,7 +299,7 @@
 
       <div class="p-6 space-y-4">
         <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 leading-relaxed">
-          <strong>私隱機制</strong>：透過個人密碼解鎖後，手機與電腦將自動在背景即時同步資料。任何無密碼之外人均無法存取您的財務紀錄。
+          <strong>私隱機制</strong>：資料庫已啟用行級安全防護（RLS）。你的每一筆交易都受密碼嚴密保護，唯有登入你的帳號才能存取。
         </div>
 
         <div class="space-y-3">
@@ -266,7 +309,7 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Supabase 匿名金鑰 (Anon Key)</label>
-            <input type="password" id="cfg-supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <input type="password" id="cfg-supabase-key" placeholder="sb_publishable_... 或 eyJ..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
           </div>
           <button type="button" onclick="saveCloudConfig()" class="w-full py-2 bg-slate-800 text-white rounded-lg text-xs font-medium hover:bg-slate-700 transition">儲存雲端資料庫設定</button>
         </div>
@@ -284,7 +327,7 @@
 
           <div class="grid grid-cols-2 gap-2 pt-2">
             <button type="button" onclick="handleAuth('login')" class="py-2.5 px-3 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-lg transition text-center shadow-sm">登入並解鎖資料</button>
-            <button type="button" onclick="handleAuth('signup')" class="py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition text-center">註冊為唯一用戶</button>
+            <button type="button" onclick="handleAuth('signup')" class="py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition text-center">註冊帳號</button>
           </div>
           <div id="auth-feedback" class="text-xs text-center text-slate-500 min-h-[1rem]"></div>
         </div>
@@ -307,16 +350,17 @@
     let tagChart = null;
     let supabaseClient = null;
     let currentUser = null;
+    let stagingTransactions = [];
+    let currentEditingId = null; // 記錄當前正在編輯的單據 ID
 
     function getDeviceType() {
       return /android|iphone|ipad|ipod/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
     }
 
-    // 初始化系統
     async function initSystem() {
-      // 讀取設定
       const savedUrl = localStorage.getItem('omniflow_sb_url');
       const savedKey = localStorage.getItem('omniflow_sb_key');
+      
       if (savedUrl && savedKey) {
         document.getElementById('cfg-supabase-url').value = savedUrl;
         document.getElementById('cfg-supabase-key').value = savedKey;
@@ -327,19 +371,28 @@
             currentUser = session.user;
             setSyncStatus(true, currentUser.email);
             await fetchExpensesFromCloud();
+            setupVisibilityListener();
             return;
           }
         } catch (e) {
-          console.error('Supabase 初始化錯誤:', e);
+          console.error('Supabase 初始化失敗:', e);
         }
       }
 
-      // 未連接雲端時的本地降級載入
+      // 未登入降級
       const savedExpenses = localStorage.getItem('omniflow_expenses');
       expenses = savedExpenses ? JSON.parse(savedExpenses) : [];
       setSyncStatus(false);
       renderCategoryButtons();
       renderDashboard();
+    }
+
+    function setupVisibilityListener() {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && supabaseClient && currentUser) {
+          fetchExpensesFromCloud();
+        }
+      });
     }
 
     function setSyncStatus(isCloud, email = '') {
@@ -357,30 +410,28 @@
       } else {
         badge.className = 'text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium';
         badge.innerText = '本地離線模式';
-        kpiStatus.innerHTML = '<span class="text-amber-600">未連線 (僅限本機)</span>';
-        authBtnLabel.innerText = '雲端連線 / 登入';
+        kpiStatus.innerHTML = '<span class="text-amber-600 font-medium">未連線 (僅限本機)</span>';
+        authBtnLabel.innerText = '登入 / 連線';
         logoutBtn.classList.add('hidden');
       }
     }
 
-    // 儲存 Supabase 連線憑證
     function saveCloudConfig() {
       const url = document.getElementById('cfg-supabase-url').value.trim();
       const key = document.getElementById('cfg-supabase-key').value.trim();
       if (!url || !key) {
-        alert('請填妥 Supabase 專案網址與匿名金鑰。');
+        alert('請填妥 Supabase 專案網址與金鑰。');
         return;
       }
       localStorage.setItem('omniflow_sb_url', url);
       localStorage.setItem('omniflow_sb_key', key);
       supabaseClient = supabase.createClient(url, key);
-      alert('雲端資料庫設定已儲存！現在請直接在下方登入或註冊您的專屬帳號。');
+      alert('雲端資料庫設定已儲存！請直接在下方登入你的帳號。');
     }
 
-    // 帳號密碼驗證
     async function handleAuth(type) {
       if (!supabaseClient) {
-        alert('請先在上方填寫並儲存 Supabase 專案網址與金鑰。');
+        alert('請先在上方填寫並儲存 Supabase 連線資訊。');
         return;
       }
       const email = document.getElementById('auth-email').value.trim();
@@ -388,19 +439,15 @@
       const feedback = document.getElementById('auth-feedback');
 
       if (!email || !password) {
-        feedback.innerText = '請輸入完整的電郵與密碼。';
+        feedback.innerText = '請輸入電郵與密碼。';
         return;
       }
-
-      feedback.innerText = '正在驗證身分...';
+      feedback.innerText = '正在連線驗證...';
 
       if (type === 'signup') {
         const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) {
-          feedback.innerText = `註冊失敗：${error.message}`;
-        } else {
-          feedback.innerText = '註冊成功！若有確認信請查收，或嘗試直接點擊登入。';
-        }
+        if (error) feedback.innerText = `註冊失敗：${error.message}`;
+        else feedback.innerText = '註冊成功！若無驗證信箱機制可直接點擊登入。';
       } else {
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) {
@@ -408,26 +455,24 @@
         } else {
           currentUser = data.user;
           setSyncStatus(true, currentUser.email);
-          feedback.innerText = '登入成功，正在同步雲端總帳...';
+          feedback.innerText = '登入成功，正在同步帳目...';
           await fetchExpensesFromCloud();
+          setupVisibilityListener();
           closeAuthModal();
         }
       }
     }
 
     async function handleLogout() {
-      if (supabaseClient) {
-        await supabaseClient.auth.signOut();
-      }
+      if (supabaseClient) await supabaseClient.auth.signOut();
       currentUser = null;
       expenses = [];
       setSyncStatus(false);
       renderDashboard();
       closeAuthModal();
-      alert('已安全登出。帳目資料已自螢幕清除，需重新輸入密碼方可存取。');
+      alert('已安全登出。螢幕資料已清除，重新輸入密碼方可查閱。');
     }
 
-    // 從雲端抓取收支紀錄
     async function fetchExpensesFromCloud() {
       if (!supabaseClient || !currentUser) return;
       const { data, error } = await supabaseClient
@@ -436,16 +481,14 @@
         .order('date', { ascending: false });
 
       if (error) {
-        console.error('抓取雲端紀錄失敗:', error);
+        console.error('抓取紀錄失敗:', error);
         return;
       }
-
       expenses = data || [];
       renderCategoryButtons();
       renderDashboard();
     }
 
-    // 渲染科目按鈕
     function renderCategoryButtons() {
       const container = document.getElementById('category-selector-container');
       container.innerHTML = '';
@@ -510,7 +553,50 @@
       document.getElementById('form-note').value = text;
     }
 
-    // 儲存並自動同步
+    // 打開新增彈窗
+    function openModalForCreate() {
+      currentEditingId = null;
+      document.getElementById('modal-title').innerText = '記錄一筆開支';
+      document.getElementById('modal-submit-btn').innerText = '儲存並即時同步';
+      document.getElementById('ai-input-container').classList.remove('hidden');
+      document.getElementById('form-amount').value = '';
+      document.getElementById('form-note').value = '';
+      document.getElementById('ai-input').value = '';
+      document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
+      selectedCategory = categories[0] || '餐飲';
+      selectedTag = '女朋友拍拖';
+      renderCategoryButtons();
+      selectTag(selectedTag);
+      document.getElementById('expense-modal').classList.remove('hidden');
+    }
+
+    // 打開編輯彈窗並回填現有資料
+    function editExpense(id) {
+      const target = expenses.find(e => e.id === id);
+      if (!target) return;
+
+      currentEditingId = id;
+      document.getElementById('modal-title').innerText = '修改收支紀錄';
+      document.getElementById('modal-submit-btn').innerText = '更新紀錄';
+      document.getElementById('ai-input-container').classList.add('hidden'); // 編輯模式隱藏 AI 速記欄以防混淆
+
+      document.getElementById('form-amount').value = target.amount;
+      document.getElementById('form-date').value = target.date;
+      document.getElementById('form-note').value = target.note || '';
+
+      selectedCategory = target.category;
+      if (!categories.includes(selectedCategory)) {
+        categories.push(selectedCategory);
+      }
+      renderCategoryButtons();
+
+      selectedTag = target.tag;
+      selectTag(selectedTag);
+
+      document.getElementById('expense-modal').classList.remove('hidden');
+    }
+
+    // 儲存（新增或更新）
     async function saveExpense() {
       const amount = parseFloat(document.getElementById('form-amount').value);
       const date = document.getElementById('form-date').value || new Date().toISOString().split('T')[0];
@@ -521,28 +607,66 @@
         return;
       }
 
-      const newRecord = {
-        id: Date.now().toString(),
-        date: date,
-        amount: amount,
-        category: selectedCategory,
-        tag: selectedTag,
-        note: note,
-        device: getDeviceType()
-      };
+      if (currentEditingId) {
+        // 編輯模式：更新現有單據
+        if (supabaseClient && currentUser) {
+          const { error } = await supabaseClient
+            .from('expenses')
+            .update({
+              amount: amount,
+              date: date,
+              category: selectedCategory,
+              tag: selectedTag,
+              note: note
+            })
+            .eq('id', currentEditingId);
 
-      if (supabaseClient && currentUser) {
-        newRecord.user_id = currentUser.id;
-        const { error } = await supabaseClient.from('expenses').insert([newRecord]);
-        if (error) {
-          alert(`雲端寫入失敗：${error.message}`);
-          return;
+          if (error) {
+            alert(`更新失敗：${error.message}`);
+            return;
+          }
+          await fetchExpensesFromCloud();
+        } else {
+          // 離線更新
+          const idx = expenses.findIndex(e => e.id === currentEditingId);
+          if (idx !== -1) {
+            expenses[idx] = {
+              ...expenses[idx],
+              amount,
+              date,
+              category: selectedCategory,
+              tag: selectedTag,
+              note
+            };
+            localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
+            renderDashboard();
+          }
         }
-        await fetchExpensesFromCloud();
       } else {
-        expenses.unshift(newRecord);
-        localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
-        renderDashboard();
+        // 新增模式：寫入新單據
+        const newRecord = {
+          id: Date.now().toString(),
+          date: date,
+          amount: amount,
+          category: selectedCategory,
+          tag: selectedTag,
+          note: note,
+          device: getDeviceType()
+        };
+
+        if (supabaseClient && currentUser) {
+          newRecord.user_id = currentUser.id;
+          const { error } = await supabaseClient.from('expenses').insert([newRecord]);
+          if (error) {
+            alert(`雲端儲存失敗：${error.message}`);
+            return;
+          }
+          await fetchExpensesFromCloud();
+        } else {
+          expenses.unshift(newRecord);
+          localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
+          renderDashboard();
+        }
       }
 
       closeModal();
@@ -563,6 +687,101 @@
         localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
         renderDashboard();
       }
+    }
+
+    // 月結單批次解析
+    function parseStatementText() {
+      const text = document.getElementById('import-text').value.trim();
+      if (!text) return;
+
+      const lines = text.split('\n');
+      stagingTransactions = [];
+
+      lines.forEach((line, index) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const amtMatch = trimmed.match(/(?:hkd|\$)?\s*([0-9,]+(?:\.[0-9]{1,2})?)/i);
+        const dateMatch = trimmed.match(/(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/);
+
+        if (amtMatch) {
+          const rawAmt = parseFloat(amtMatch[1].replace(/,/g, ''));
+          let rawDate = dateMatch ? dateMatch[1].replace(/\//g, '-') : new Date().toISOString().split('T')[0];
+          
+          let guessedCat = '餐飲';
+          const lower = trimmed.toLowerCase();
+          if (lower.includes('uber') || lower.includes('mtr') || lower.includes('taxi') || lower.includes('petrol')) guessedCat = '交通';
+          else if (lower.includes('flight') || lower.includes('hotel') || lower.includes('cathay') || lower.includes('agoda')) guessedCat = '旅遊';
+          else if (lower.includes('apple') || lower.includes('donki') || lower.includes('fortress') || lower.includes('broadway')) guessedCat = '購物';
+
+          stagingTransactions.push({
+            tempId: index,
+            date: rawDate,
+            amount: rawAmt,
+            category: guessedCat,
+            tag: '個人獨處',
+            note: trimmed.substring(0, 30)
+          });
+        }
+      });
+
+      if (stagingTransactions.length === 0) {
+        alert('未能在輸入文字中辨識出有效交易，請檢查格式。');
+        return;
+      }
+
+      renderStagingList();
+    }
+
+    function renderStagingList() {
+      const container = document.getElementById('staging-list');
+      container.innerHTML = '';
+      stagingTransactions.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'p-2.5 bg-slate-50 rounded-lg border border-slate-200 text-xs flex items-center justify-between';
+        div.innerHTML = `
+          <div>
+            <div class="font-bold text-slate-900">${item.note}</div>
+            <div class="text-slate-500 font-mono text-[11px]">${item.date} · <span class="text-brand-600 font-semibold">${item.category}</span></div>
+          </div>
+          <div class="font-bold font-mono text-slate-900">HK$ ${item.amount.toFixed(2)}</div>
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('staging-count').innerText = stagingTransactions.length;
+      document.getElementById('staging-area').classList.remove('hidden');
+    }
+
+    async function commitStagingExpenses() {
+      if (!supabaseClient || !currentUser) {
+        alert('請先登入雲端帳號以批次寫入數據。');
+        return;
+      }
+
+      const rowsToInsert = stagingTransactions.map(t => ({
+        id: (Date.now() + Math.random()).toString(),
+        user_id: currentUser.id,
+        date: t.date,
+        amount: t.amount,
+        category: t.category,
+        tag: t.tag,
+        note: t.note,
+        device: getDeviceType()
+      }));
+
+      const { error } = await supabaseClient.from('expenses').insert(rowsToInsert);
+      if (error) {
+        alert(`批次寫入失敗：${error.message}`);
+        return;
+      }
+
+      alert(`成功將 ${rowsToInsert.length} 筆月結單交易寫入雲端總帳！`);
+      stagingTransactions = [];
+      document.getElementById('import-text').value = '';
+      document.getElementById('staging-area').classList.add('hidden');
+      closeImportModal();
+      await fetchExpensesFromCloud();
     }
 
     function renderDashboard() {
@@ -600,7 +819,10 @@
           <td class="py-3 px-4">${deviceBadge}</td>
           <td class="py-3 px-4 text-right font-bold font-mono text-slate-900">${Number(item.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
           <td class="py-3 px-4 text-center">
-            <button onclick="deleteExpense('${item.id}')" class="text-slate-400 hover:text-rose-500 transition"><i class="fa-regular fa-trash-can"></i></button>
+            <div class="flex items-center justify-center space-x-2">
+              <button onclick="editExpense('${item.id}')" title="編輯" class="text-slate-400 hover:text-brand-600 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteExpense('${item.id}')" title="刪除" class="text-slate-400 hover:text-rose-500 transition"><i class="fa-regular fa-trash-can"></i></button>
+            </div>
           </td>
         `;
         tbody.appendChild(tr);
@@ -699,12 +921,15 @@
       `;
     }
 
-    function openModal() {
-      document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
-      document.getElementById('expense-modal').classList.remove('hidden');
-    }
     function closeModal() {
+      currentEditingId = null;
       document.getElementById('expense-modal').classList.add('hidden');
+    }
+    function openImportModal() {
+      document.getElementById('import-modal').classList.remove('hidden');
+    }
+    function closeImportModal() {
+      document.getElementById('import-modal').classList.add('hidden');
     }
     function openAuthModal() {
       document.getElementById('auth-modal').classList.remove('hidden');
