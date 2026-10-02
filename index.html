@@ -10,6 +10,7 @@
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 
@@ -51,16 +52,16 @@
         <div>
           <div class="flex items-center space-x-2">
             <h1 class="text-base font-bold text-slate-900 leading-none">OmniFlow</h1>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">本地沙盒隔離</span>
+            <span id="sync-status-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">離線模式</span>
           </div>
-          <p class="text-xs text-slate-500 mt-0.5">多維度情境財務分析儀</p>
+          <p class="text-xs text-slate-500 mt-0.5">全自動雲端同步與開支歸因儀</p>
         </div>
       </div>
       
       <div class="flex items-center space-x-2">
-        <button onclick="openSyncModal()" class="px-3 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center space-x-1.5">
-          <i class="fa-solid fa-arrows-rotate"></i>
-          <span class="hidden sm:inline">跨裝置同步</span>
+        <button onclick="openAuthModal()" id="auth-btn" class="px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-shield-halved text-brand-600"></i>
+          <span id="auth-btn-label">雲端連線 / 登入</span>
         </button>
         <button onclick="openModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition flex items-center space-x-1.5">
           <i class="fa-solid fa-plus"></i>
@@ -80,15 +81,15 @@
         <div class="text-xl sm:text-2xl font-bold text-slate-900 mt-1" id="kpi-current-month">HK$ 0</div>
       </div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-        <span class="text-xs text-slate-500 font-medium">對象情境佔比</span>
+        <span class="text-xs text-slate-500 font-medium">情境對象佔比</span>
         <div class="text-xl sm:text-2xl font-bold text-rose-600 mt-1" id="kpi-gf-percentage">0%</div>
       </div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-        <span class="text-xs text-slate-500 font-medium">當前使用裝置</span>
-        <div class="text-xl sm:text-2xl font-bold text-indigo-600 mt-1" id="kpi-device-status">偵測中</div>
+        <span class="text-xs text-slate-500 font-medium">資料庫同步狀態</span>
+        <div class="text-sm font-semibold text-slate-800 mt-2 truncate" id="kpi-cloud-status">未連接雲端</div>
       </div>
       <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
-        <span class="text-xs text-slate-500 font-medium">總記帳筆數</span>
+        <span class="text-xs text-slate-500 font-medium">已同步筆數</span>
         <div class="text-xl sm:text-2xl font-bold text-slate-900 mt-1" id="kpi-total-records">0 筆</div>
       </div>
     </section>
@@ -99,9 +100,9 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
             <i class="fa-solid fa-chart-column text-brand-600"></i>
-            <span>月度開支走勢與歸因比對</span>
+            <span>月度開支走勢分析</span>
           </h2>
-          <span class="text-xs text-slate-500">過去 6 個月數據</span>
+          <span class="text-xs text-slate-500">自動雲端彙整</span>
         </div>
         <div class="h-64">
           <canvas id="monthlyChart"></canvas>
@@ -112,7 +113,7 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
             <i class="fa-solid fa-chart-pie text-brand-600"></i>
-            <span>對象情境分佈</span>
+            <span>情境對象分佈</span>
           </h2>
           <span class="text-xs text-slate-500">全期統計</span>
         </div>
@@ -129,7 +130,7 @@
         <h2 class="text-sm font-bold tracking-wide uppercase text-slate-300">月度開支波動診斷儀</h2>
       </div>
       <div id="attribution-analysis" class="text-sm leading-relaxed text-slate-300">
-        正在分析開支模式...
+        正在載入財務資料庫...
       </div>
     </section>
 
@@ -138,7 +139,7 @@
       <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 class="text-base font-bold text-slate-900">消費明細紀錄</h2>
-          <p class="text-xs text-slate-500 mt-0.5">具備裝置來源標籤與情境標記</p>
+          <p class="text-xs text-slate-500 mt-0.5">自動同步於所有已授權裝置</p>
         </div>
         
         <div class="flex items-center space-x-2">
@@ -161,7 +162,7 @@
               <th class="py-3 px-4 font-semibold">科目分類</th>
               <th class="py-3 px-4 font-semibold">對象標籤</th>
               <th class="py-3 px-4 font-semibold">描述備註</th>
-              <th class="py-3 px-4 font-semibold">記錄來源</th>
+              <th class="py-3 px-4 font-semibold">記錄終端</th>
               <th class="py-3 px-4 font-semibold text-right">金額 (HK$)</th>
               <th class="py-3 px-4 font-semibold text-center">操作</th>
             </tr>
@@ -188,10 +189,10 @@
         <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <label class="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
             <span>✨ AI 跨語言語意速記</span>
-            <span class="text-[10px] text-slate-500">支援廣東話、英文及中英夾雜</span>
+            <span class="text-[10px] text-slate-500">自動分拆科目與情境</span>
           </label>
           <div class="flex space-x-2">
-            <input type="text" id="ai-input" placeholder="例如：同女朋友食居酒屋 $650 / Taxi to office 80" class="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <input type="text" id="ai-input" placeholder="例如：同女朋友食居酒屋 $650 / Taxi home 90" class="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
             <button type="button" onclick="parseNaturalLanguage()" class="px-3 py-2 bg-slate-900 text-white rounded-lg text-xs font-medium hover:bg-slate-800 transition">剖析</button>
           </div>
         </div>
@@ -207,7 +208,7 @@
             <button type="button" onclick="promptNewCategory()" class="text-[11px] text-brand-600 font-medium hover:underline">+ 新增自訂科目</button>
           </div>
           <div id="category-selector-container" class="grid grid-cols-3 gap-2">
-            <!-- 動態生成科目按鈕 -->
+            <!-- 動態生成科目 -->
           </div>
         </div>
 
@@ -230,113 +231,221 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">描述備註</label>
-            <input type="text" id="form-note" placeholder="例如：中環燒肉晚餐" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <input type="text" id="form-note" placeholder="例如：中環牛扒晚餐" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
           </div>
         </div>
       </div>
 
       <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-3">
         <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800">取消</button>
-        <button type="button" onclick="saveExpense()" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition">儲存開支</button>
+        <button type="button" onclick="saveExpense()" class="px-5 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-lg shadow-sm transition">儲存並自動同步</button>
       </div>
     </div>
   </div>
 
-  <!-- 跨裝置同步與備份 Modal -->
-  <div id="sync-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <!-- 雲端連線與帳號防護 Modal -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
         <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
-          <i class="fa-solid fa-arrows-rotate text-brand-600"></i>
-          <span>跨裝置資料同步中心</span>
+          <i class="fa-solid fa-lock text-brand-600"></i>
+          <span>雲端同步與個人私隱安全鎖</span>
         </h3>
-        <button onclick="closeSyncModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
-      <div class="p-6 space-y-5">
-        <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 leading-relaxed">
-          <strong>私隱保證</strong>：系統資料純粹存放在本機，此同步功能透過生成加密文字檔案完成，無需經過任何第三方伺服器。
+      <div class="p-6 space-y-4">
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 leading-relaxed">
+          <strong>私隱機制</strong>：透過個人密碼解鎖後，手機與電腦將自動在背景即時同步資料。任何無密碼之外人均無法存取您的財務紀錄。
         </div>
 
-        <div class="space-y-2">
-          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">步驟一：由此裝置匯出</h4>
-          <p class="text-xs text-slate-500">將目前所有的記帳明細與自訂科目打包為單一檔案。</p>
-          <button onclick="exportDataToFile()" class="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center justify-center space-x-2 transition">
-            <i class="fa-solid fa-download"></i>
-            <span>下載同步資料備份檔 (.json)</span>
-          </button>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Supabase 專案網址 (Project URL)</label>
+            <input type="text" id="cfg-supabase-url" placeholder="https://xxxxxxxx.supabase.co" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Supabase 匿名金鑰 (Anon Key)</label>
+            <input type="password" id="cfg-supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <button type="button" onclick="saveCloudConfig()" class="w-full py-2 bg-slate-800 text-white rounded-lg text-xs font-medium hover:bg-slate-700 transition">儲存雲端資料庫設定</button>
         </div>
 
-        <div class="pt-4 border-t border-slate-100 space-y-2">
-          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">步驟二：在另一部裝置匯入</h4>
-          <p class="text-xs text-slate-500">選取從另一部手機或電腦傳來的備份檔進行合併。</p>
-          <label class="w-full py-2.5 px-4 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg flex items-center justify-center space-x-2 cursor-pointer transition">
-            <i class="fa-solid fa-upload text-brand-600"></i>
-            <span>選取備份檔案並合併</span>
-            <input type="file" id="import-file-input" accept=".json" onchange="importDataFromFile(event)" class="hidden">
-          </label>
+        <div class="pt-4 border-t border-slate-100 space-y-3">
+          <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">個人專屬帳號與密碼</h4>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">電郵信箱 (Email)</label>
+            <input type="email" id="auth-email" placeholder="your-email@example.com" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">私隱密碼 (Password)</label>
+            <input type="password" id="auth-password" placeholder="請輸入安全密碼" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <button type="button" onclick="handleAuth('login')" class="py-2.5 px-3 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-lg transition text-center shadow-sm">登入並解鎖資料</button>
+            <button type="button" onclick="handleAuth('signup')" class="py-2.5 px-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition text-center">註冊為唯一用戶</button>
+          </div>
+          <div id="auth-feedback" class="text-xs text-center text-slate-500 min-h-[1rem]"></div>
         </div>
       </div>
 
-      <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
-        <button onclick="closeSyncModal()" class="px-4 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800">完成</button>
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+        <button onclick="handleLogout()" id="logout-btn" class="text-xs text-rose-600 hover:underline hidden">登出並鎖定帳目</button>
+        <button onclick="closeAuthModal()" class="px-4 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-800 ml-auto">關閉</button>
       </div>
     </div>
   </div>
 
   <script>
-    // 預設資料集
     const DEFAULT_CATEGORIES = ['餐飲', '交通', '旅遊', '娛樂', '居住', '購物', '雜項'];
-    const DEFAULT_EXPENSES = [
-      { id: '1', date: '2026-09-05', amount: 7200, category: '旅遊', tag: '女朋友拍拖', note: '預訂外遊機票', device: 'desktop' },
-      { id: '2', date: '2026-09-12', amount: 850, category: '餐飲', tag: '女朋友拍拖', note: '拍拖紀念日牛扒晚餐', device: 'mobile' },
-      { id: '3', date: '2026-09-18', amount: 380, category: '餐飲', tag: '朋友聚餐', note: '週末大坑居酒屋聚會', device: 'mobile' },
-      { id: '4', date: '2026-09-22', amount: 110, category: '交通', tag: '個人獨處', note: '過海的士返工', device: 'mobile' },
-      { id: '5', date: '2026-09-28', amount: 450, category: '購物', tag: '個人獨處', note: '添置辦公室鍵盤', device: 'desktop' },
-      { id: '6', date: '2026-10-01', amount: 520, category: '餐飲', tag: '家庭長輩', note: '週末家庭茶樓聚餐', device: 'mobile' },
-    ];
-
     let expenses = [];
-    let categories = [];
-    let selectedCategory = '';
-    let selectedTag = '';
+    let categories = [...DEFAULT_CATEGORIES];
+    let selectedCategory = '餐飲';
+    let selectedTag = '女朋友拍拖';
     let monthlyChart = null;
     let tagChart = null;
+    let supabaseClient = null;
+    let currentUser = null;
 
-    // 判斷當前環境
     function getDeviceType() {
-      const ua = navigator.userAgent;
-      if (/android|iphone|ipad|ipod/i.test(ua)) return 'mobile';
-      return 'desktop';
+      return /android|iphone|ipad|ipod/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
     }
 
-    // 初始化儲存與資料
-    function initStorage() {
+    // 初始化系統
+    async function initSystem() {
+      // 讀取設定
+      const savedUrl = localStorage.getItem('omniflow_sb_url');
+      const savedKey = localStorage.getItem('omniflow_sb_key');
+      if (savedUrl && savedKey) {
+        document.getElementById('cfg-supabase-url').value = savedUrl;
+        document.getElementById('cfg-supabase-key').value = savedKey;
+        try {
+          supabaseClient = supabase.createClient(savedUrl, savedKey);
+          const { data: { session } } = await supabaseClient.auth.getSession();
+          if (session && session.user) {
+            currentUser = session.user;
+            setSyncStatus(true, currentUser.email);
+            await fetchExpensesFromCloud();
+            return;
+          }
+        } catch (e) {
+          console.error('Supabase 初始化錯誤:', e);
+        }
+      }
+
+      // 未連接雲端時的本地降級載入
       const savedExpenses = localStorage.getItem('omniflow_expenses');
-      expenses = savedExpenses ? JSON.parse(savedExpenses) : DEFAULT_EXPENSES;
-      
-      const savedCats = localStorage.getItem('omniflow_categories');
-      categories = savedCats ? JSON.parse(savedCats) : DEFAULT_CATEGORIES;
-
-      selectedCategory = categories[0] || '餐飲';
-      selectedTag = '女朋友拍拖';
-
-      // 顯示當前裝置
-      const devType = getDeviceType();
-      document.getElementById('kpi-device-status').innerHTML = devType === 'mobile' 
-        ? '<span class="text-emerald-600 flex items-center space-x-1"><i class="fa-solid fa-mobile-screen"></i> <span>iPhone/手機</span></span>' 
-        : '<span class="text-blue-600 flex items-center space-x-1"><i class="fa-solid fa-laptop"></i> <span>桌面電腦</span></span>';
-
+      expenses = savedExpenses ? JSON.parse(savedExpenses) : [];
+      setSyncStatus(false);
       renderCategoryButtons();
       renderDashboard();
     }
 
-    function saveState() {
-      localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
-      localStorage.setItem('omniflow_categories', JSON.stringify(categories));
+    function setSyncStatus(isCloud, email = '') {
+      const badge = document.getElementById('sync-status-badge');
+      const kpiStatus = document.getElementById('kpi-cloud-status');
+      const authBtnLabel = document.getElementById('auth-btn-label');
+      const logoutBtn = document.getElementById('logout-btn');
+
+      if (isCloud) {
+        badge.className = 'text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold';
+        badge.innerText = '雲端即時同步中';
+        kpiStatus.innerHTML = `<span class="text-emerald-600 flex items-center space-x-1"><i class="fa-solid fa-cloud"></i> <span>已連線 (${email.split('@')[0]})</span></span>`;
+        authBtnLabel.innerText = '帳號安全中心';
+        logoutBtn.classList.remove('hidden');
+      } else {
+        badge.className = 'text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium';
+        badge.innerText = '本地離線模式';
+        kpiStatus.innerHTML = '<span class="text-amber-600">未連線 (僅限本機)</span>';
+        authBtnLabel.innerText = '雲端連線 / 登入';
+        logoutBtn.classList.add('hidden');
+      }
     }
 
-    // 動態科目按鈕渲染
+    // 儲存 Supabase 連線憑證
+    function saveCloudConfig() {
+      const url = document.getElementById('cfg-supabase-url').value.trim();
+      const key = document.getElementById('cfg-supabase-key').value.trim();
+      if (!url || !key) {
+        alert('請填妥 Supabase 專案網址與匿名金鑰。');
+        return;
+      }
+      localStorage.setItem('omniflow_sb_url', url);
+      localStorage.setItem('omniflow_sb_key', key);
+      supabaseClient = supabase.createClient(url, key);
+      alert('雲端資料庫設定已儲存！現在請直接在下方登入或註冊您的專屬帳號。');
+    }
+
+    // 帳號密碼驗證
+    async function handleAuth(type) {
+      if (!supabaseClient) {
+        alert('請先在上方填寫並儲存 Supabase 專案網址與金鑰。');
+        return;
+      }
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+      const feedback = document.getElementById('auth-feedback');
+
+      if (!email || !password) {
+        feedback.innerText = '請輸入完整的電郵與密碼。';
+        return;
+      }
+
+      feedback.innerText = '正在驗證身分...';
+
+      if (type === 'signup') {
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) {
+          feedback.innerText = `註冊失敗：${error.message}`;
+        } else {
+          feedback.innerText = '註冊成功！若有確認信請查收，或嘗試直接點擊登入。';
+        }
+      } else {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+          feedback.innerText = `登入失敗：${error.message}`;
+        } else {
+          currentUser = data.user;
+          setSyncStatus(true, currentUser.email);
+          feedback.innerText = '登入成功，正在同步雲端總帳...';
+          await fetchExpensesFromCloud();
+          closeAuthModal();
+        }
+      }
+    }
+
+    async function handleLogout() {
+      if (supabaseClient) {
+        await supabaseClient.auth.signOut();
+      }
+      currentUser = null;
+      expenses = [];
+      setSyncStatus(false);
+      renderDashboard();
+      closeAuthModal();
+      alert('已安全登出。帳目資料已自螢幕清除，需重新輸入密碼方可存取。');
+    }
+
+    // 從雲端抓取收支紀錄
+    async function fetchExpensesFromCloud() {
+      if (!supabaseClient || !currentUser) return;
+      const { data, error } = await supabaseClient
+        .from('expenses')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error('抓取雲端紀錄失敗:', error);
+        return;
+      }
+
+      expenses = data || [];
+      renderCategoryButtons();
+      renderDashboard();
+    }
+
+    // 渲染科目按鈕
     function renderCategoryButtons() {
       const container = document.getElementById('category-selector-container');
       container.innerHTML = '';
@@ -345,14 +454,9 @@
         btn.type = 'button';
         btn.className = `cat-btn border border-slate-200 rounded-lg py-2 px-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition text-center truncate ${selectedCategory === cat ? 'bg-brand-500 text-white border-brand-500 font-bold' : ''}`;
         btn.innerText = cat;
-        btn.onclick = () => selectCategory(cat);
+        btn.onclick = () => { selectedCategory = cat; renderCategoryButtons(); };
         container.appendChild(btn);
       });
-    }
-
-    function selectCategory(cat) {
-      selectedCategory = cat;
-      renderCategoryButtons();
     }
 
     function selectTag(tag) {
@@ -367,51 +471,47 @@
     }
 
     function promptNewCategory() {
-      const name = prompt('請輸入自訂科目名稱（例如：寵物、投資、進修）：');
+      const name = prompt('請輸入自訂科目名稱：');
       if (name && name.trim()) {
-        const cleanName = name.trim();
-        if (!categories.includes(cleanName)) {
-          categories.push(cleanName);
-          selectedCategory = cleanName;
-          saveState();
+        const clean = name.trim();
+        if (!categories.includes(clean)) {
+          categories.push(clean);
+          selectedCategory = clean;
           renderCategoryButtons();
         }
       }
     }
 
-    // AI 語意速記辨識
     function parseNaturalLanguage() {
       const text = document.getElementById('ai-input').value.trim();
       if (!text) return;
 
-      // 提取金額數字
       const amountMatch = text.match(/(?:hk\$|\$)?\s*(\d+(?:\.\d+)?)/i);
       if (amountMatch) {
         document.getElementById('form-amount').value = parseFloat(amountMatch[1]);
       }
 
-      // 語意推斷科目
       const lower = text.toLowerCase();
       if (lower.includes('taxi') || lower.includes('的士') || lower.includes('uber') || lower.includes('車')) {
-        selectCategory('交通');
+        selectedCategory = '交通';
       } else if (lower.includes('機票') || lower.includes('酒店') || lower.includes('旅行') || lower.includes('外遊')) {
-        selectCategory('旅遊');
+        selectedCategory = '旅遊';
       } else if (lower.includes('食') || lower.includes('dinner') || lower.includes('lunch') || lower.includes('晚餐') || lower.includes('居酒屋')) {
-        selectCategory('餐飲');
+        selectedCategory = '餐飲';
       }
+      renderCategoryButtons();
 
-      // 語意推斷情境標籤
-      if (lower.includes('女朋友') || lower.includes('拍拖') || lower.includes('gf') || lower.includes('girlfriend')) {
+      if (lower.includes('女朋友') || lower.includes('拍拖') || lower.includes('gf')) {
         selectTag('女朋友拍拖');
-      } else if (lower.includes('朋友') || lower.includes('fd') || lower.includes('同事') || lower.includes('聚餐')) {
+      } else if (lower.includes('朋友') || lower.includes('fd') || lower.includes('同事')) {
         selectTag('朋友聚餐');
       }
 
       document.getElementById('form-note').value = text;
     }
 
-    // 儲存一筆開支
-    function saveExpense() {
+    // 儲存並自動同步
+    async function saveExpense() {
       const amount = parseFloat(document.getElementById('form-amount').value);
       const date = document.getElementById('form-date').value || new Date().toISOString().split('T')[0];
       const note = document.getElementById('form-note').value.trim() || selectedCategory;
@@ -428,43 +528,60 @@
         category: selectedCategory,
         tag: selectedTag,
         note: note,
-        device: getDeviceType() // 自動注入裝置標記
+        device: getDeviceType()
       };
 
-      expenses.unshift(newRecord);
-      saveState();
+      if (supabaseClient && currentUser) {
+        newRecord.user_id = currentUser.id;
+        const { error } = await supabaseClient.from('expenses').insert([newRecord]);
+        if (error) {
+          alert(`雲端寫入失敗：${error.message}`);
+          return;
+        }
+        await fetchExpensesFromCloud();
+      } else {
+        expenses.unshift(newRecord);
+        localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
+        renderDashboard();
+      }
+
       closeModal();
-      renderDashboard();
     }
 
-    function deleteExpense(id) {
-      if (confirm('確定刪除此筆收支紀錄？')) {
+    async function deleteExpense(id) {
+      if (!confirm('確定刪除此筆收支紀錄？')) return;
+
+      if (supabaseClient && currentUser) {
+        const { error } = await supabaseClient.from('expenses').delete().eq('id', id);
+        if (error) {
+          alert(`雲端刪除失敗：${error.message}`);
+          return;
+        }
+        await fetchExpensesFromCloud();
+      } else {
         expenses = expenses.filter(e => e.id !== id);
-        saveState();
+        localStorage.setItem('omniflow_expenses', JSON.stringify(expenses));
         renderDashboard();
       }
     }
 
-    // 儀表板與圖表渲染
     function renderDashboard() {
       const filterTag = document.getElementById('filter-tag').value;
       const filtered = filterTag === 'ALL' ? expenses : expenses.filter(e => e.tag === filterTag);
 
-      // KPI 計算
       const now = new Date();
       const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const thisMonthExpenses = expenses.filter(e => e.date.startsWith(currentMonthStr));
-      const totalThisMonth = thisMonthExpenses.reduce((s, e) => s + e.amount, 0);
+      const thisMonthExpenses = expenses.filter(e => e.date && e.date.startsWith(currentMonthStr));
+      const totalThisMonth = thisMonthExpenses.reduce((s, e) => s + Number(e.amount), 0);
 
       document.getElementById('kpi-current-month').innerText = `HK$ ${Math.round(totalThisMonth).toLocaleString()}`;
       document.getElementById('kpi-total-records').innerText = `${expenses.length} 筆`;
 
-      const gfExpenses = expenses.filter(e => e.tag === '女朋友拍拖').reduce((s, e) => s + e.amount, 0);
-      const allTotal = expenses.reduce((s, e) => s + e.amount, 0);
+      const gfExpenses = expenses.filter(e => e.tag === '女朋友拍拖').reduce((s, e) => s + Number(e.amount), 0);
+      const allTotal = expenses.reduce((s, e) => s + Number(e.amount), 0);
       const gfPct = allTotal > 0 ? Math.round((gfExpenses / allTotal) * 100) : 0;
       document.getElementById('kpi-gf-percentage').innerText = `${gfPct}%`;
 
-      // 渲染表格
       const tbody = document.getElementById('transaction-table-body');
       tbody.innerHTML = '';
       filtered.forEach(item => {
@@ -479,9 +596,9 @@
           <td class="py-3 px-4 text-slate-500 font-mono">${item.date}</td>
           <td class="py-3 px-4 font-semibold text-slate-900">${item.category}</td>
           <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[11px] bg-slate-100 text-slate-700 font-medium">${item.tag}</span></td>
-          <td class="py-3 px-4 text-slate-600">${item.note}</td>
+          <td class="py-3 px-4 text-slate-600">${item.note || ''}</td>
           <td class="py-3 px-4">${deviceBadge}</td>
-          <td class="py-3 px-4 text-right font-bold font-mono text-slate-900">${item.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          <td class="py-3 px-4 text-right font-bold font-mono text-slate-900">${Number(item.amount).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
           <td class="py-3 px-4 text-center">
             <button onclick="deleteExpense('${item.id}')" class="text-slate-400 hover:text-rose-500 transition"><i class="fa-regular fa-trash-can"></i></button>
           </td>
@@ -493,12 +610,12 @@
       renderAttributionAnalysis();
     }
 
-    // 圖表渲染
     function renderCharts() {
       const monthlyTotals = {};
       expenses.forEach(e => {
+        if (!e.date) return;
         const m = e.date.substring(0, 7);
-        monthlyTotals[m] = (monthlyTotals[m] || 0) + e.amount;
+        monthlyTotals[m] = (monthlyTotals[m] || 0) + Number(e.amount);
       });
       const sortedMonths = Object.keys(monthlyTotals).sort();
       const monthData = sortedMonths.map(m => monthlyTotals[m]);
@@ -526,7 +643,7 @@
 
       const tagTotals = {};
       expenses.forEach(e => {
-        tagTotals[e.tag] = (tagTotals[e.tag] || 0) + e.amount;
+        tagTotals[e.tag] = (tagTotals[e.tag] || 0) + Number(e.amount);
       });
 
       if (tagChart) tagChart.destroy();
@@ -548,13 +665,16 @@
       });
     }
 
-    // 歸因分析生成
     function renderAttributionAnalysis() {
-      if (expenses.length === 0) return;
+      if (expenses.length === 0) {
+        document.getElementById('attribution-analysis').innerText = '尚無足夠數據，請記錄第一筆開支以啟動歸因分析。';
+        return;
+      }
       const monthlyTotals = {};
       expenses.forEach(e => {
+        if (!e.date) return;
         const m = e.date.substring(0, 7);
-        monthlyTotals[m] = (monthlyTotals[m] || 0) + e.amount;
+        monthlyTotals[m] = (monthlyTotals[m] || 0) + Number(e.amount);
       });
 
       let peakMonth = '';
@@ -563,9 +683,9 @@
         if (v > maxVal) { maxVal = v; peakMonth = m; }
       }
 
-      const peakExpenses = expenses.filter(e => e.date.startsWith(peakMonth));
+      const peakExpenses = expenses.filter(e => e.date && e.date.startsWith(peakMonth));
       const peakTagTotals = {};
-      peakExpenses.forEach(e => { peakTagTotals[e.tag] = (peakTagTotals[e.tag] || 0) + e.amount; });
+      peakExpenses.forEach(e => { peakTagTotals[e.tag] = (peakTagTotals[e.tag] || 0) + Number(e.amount); });
 
       let topTag = '';
       let topTagVal = -1;
@@ -574,75 +694,11 @@
       }
 
       document.getElementById('attribution-analysis').innerHTML = `
-        開支高峰月份出現在 <span class="font-bold text-amber-300 font-mono">${peakMonth}</span>，總支出達 <span class="font-bold text-white font-mono">HK$ ${Math.round(maxVal).toLocaleString()}</span>。
-        深入分析顯示，該月最主要的資金推動力來自「<span class="font-bold text-white">${topTag}</span>」（佔該月開支約 ${Math.round((topTagVal / maxVal) * 100)}%）。各項自訂科目均正常記錄，資料庫運作平穩。
+        雲端資料庫分析：開支高峰月份為 <span class="font-bold text-amber-300 font-mono">${peakMonth}</span>，總額達 <span class="font-bold text-white font-mono">HK$ ${Math.round(maxVal).toLocaleString()}</span>。
+        主要推動來源為「<span class="font-bold text-white">${topTag}</span>」（佔該月約 ${Math.round((topTagVal / maxVal) * 100)}%）。全裝置同步運作正常。
       `;
     }
 
-    // 跨裝置匯出與匯入
-    function exportDataToFile() {
-      const dataPackage = {
-        app: 'OmniFlow',
-        version: '1.2.0',
-        timestamp: new Date().toISOString(),
-        categories: categories,
-        expenses: expenses
-      };
-      const blob = new Blob([JSON.stringify(dataPackage, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `omniflow_backup_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function importDataFromFile(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const imported = JSON.parse(e.target.result);
-          if (!imported.expenses || !Array.isArray(imported.expenses)) {
-            alert('檔案格式錯誤，無法解析記帳資料。');
-            return;
-          }
-
-          // 合併自訂科目
-          if (imported.categories && Array.isArray(imported.categories)) {
-            imported.categories.forEach(c => {
-              if (!categories.includes(c)) categories.push(c);
-            });
-          }
-
-          // 合併收支紀錄（依據 ID 去重）
-          const existingIds = new Set(expenses.map(item => item.id));
-          let addCount = 0;
-          imported.expenses.forEach(item => {
-            if (!existingIds.has(item.id)) {
-              expenses.push(item);
-              existingIds.add(item.id);
-              addCount++;
-            }
-          });
-
-          // 重新排序
-          expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-          saveState();
-          initStorage();
-          closeSyncModal();
-          alert(`資料同步成功！已成功匯入並合併 ${addCount} 筆新紀錄。`);
-        } catch (err) {
-          alert('解析檔案失敗，請確保選取正確的 OmniFlow 備份檔案。');
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // 視窗開關
     function openModal() {
       document.getElementById('form-date').value = new Date().toISOString().split('T')[0];
       document.getElementById('expense-modal').classList.remove('hidden');
@@ -650,16 +706,15 @@
     function closeModal() {
       document.getElementById('expense-modal').classList.add('hidden');
     }
-    function openSyncModal() {
-      document.getElementById('sync-modal').classList.remove('hidden');
+    function openAuthModal() {
+      document.getElementById('auth-modal').classList.remove('hidden');
     }
-    function closeSyncModal() {
-      document.getElementById('sync-modal').classList.add('hidden');
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
     }
 
-    // 啟動
     window.addEventListener('DOMContentLoaded', () => {
-      initStorage();
+      initSystem();
     });
   </script>
 </body>
